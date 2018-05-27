@@ -30,10 +30,16 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	//Switches between the 2 cameras on the player
+	//Input functions
 	void SwitchCamera();
-
-	void Jump();
+	void StartSprint();
+	void StopSprint();
+	void StartCrouch();
+	void StopCrouch();
+	void MoveForward(float InputAmount);
+	void MoveRight(float InputAmount);
+	void LookUp(float InputAmount);
+	void Turn(float InputAmount);
 
 	//Finds the camera components and sets them to the appropriate variables
 	void FindCameraComponents();
@@ -49,5 +55,23 @@ private:
 	//UCharacterMovementComponent* MovementComponent = nullptr;
 
 	AActor* Player;
+
+	UStaticMeshComponent* Mesh;
+
+	//speed when not sprinting
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float WalkSpeed = 250.f;
+
+	//speed when sprinting
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float SprintSpeed = 550.f;
+
+	//force applied for jumps
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float JumpVelocity = 400.f;
+
+	//percentage of max walk speed allowed to move while in air
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float AirControl = 0.3;
 
 };
