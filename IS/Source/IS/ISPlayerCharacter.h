@@ -9,6 +9,7 @@
 ///Forward Declarations
 class UFirstPersonCameraComponent;
 class UThirdPersonCameraComponent;
+class UViewRotator;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -32,6 +33,7 @@ public:
 
 	//Input functions
 	void SwitchCamera();
+	void Interact();
 	void StartSprint();
 	void StopSprint();
 	void StartCrouch();
@@ -49,6 +51,14 @@ public:
 
 private:
 
+	FHitResult GetFirstWorldDynamicInReach();
+
+	//returns current end of reach line
+	FVector GetReachLineEnd();
+
+	//returns current start of reach line
+	FVector GetReachLineStart();
+
 	UFirstPersonCameraComponent * FirstPersonCamera = nullptr;
 	UThirdPersonCameraComponent * ThirdPersonCamera = nullptr;
 
@@ -56,7 +66,12 @@ private:
 
 	AActor* Player;
 
-	UStaticMeshComponent* Mesh;
+	UStaticMeshComponent* MeshComponent = nullptr;;
+
+	USceneComponent* SpringArm = nullptr;
+
+	float BaseTurnRate;
+	float BaseLookUpRate;
 
 	//speed when not sprinting
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -74,4 +89,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float AirControl = 0.3;
 
+	bool bIsFirstPerson = true;
+
+	//How far ahead of the player can we reach in cm
+	float Reach = 200.f;
+
+	bool bHasKey = false;
 };

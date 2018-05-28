@@ -5,9 +5,12 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "FirstPersonCameraComponent.h"
 #include "ThirdPersonCameraComponent.h"
+#include "ViewRotator.h"
+#include "Door.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 #define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
@@ -27,6 +30,10 @@ AISPlayerCharacter::AISPlayerCharacter()
 	/// make sure the pawn is set up to be controlled
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
+	/// set turn rates for look around input
+	BaseTurnRate = 45.f;
+	BaseLookUpRate = 45.f;
+
 	///Set up character movement component with default values
 	GetCharacterMovement()->bOrientRotationToMovement = true; //Move character in direction of input
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
@@ -34,9 +41,6 @@ AISPlayerCharacter::AISPlayerCharacter()
 	GetCharacterMovement()->AirControl = AirControl;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-
-	Mesh = FindComponentByClass<UStaticMeshComponent>();
-
 }
 
 // Called when the game starts or when spawned
@@ -45,11 +49,6 @@ void AISPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	Player = this;
-
-	if (Mesh)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Mesh Set"));
-	}
 
 	FindCameraComponents();
 	SetupComponents();
@@ -69,6 +68,8 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	check(PlayerInputComponent);
 	///InputAction bindings
 	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &AISPlayerCharacter::SwitchCamera);
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AISPlayerCharacter::Interact);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
@@ -92,51 +93,67 @@ void AISPlayerCharacter::SwitchCamera()
 	///Decide which camera is the active camera and switch to the other
 	if (FirstPersonCamera->IsActive())
 	{
+		bIsFirstPerson = false;
 		FirstPersonCamera->SetActive(false);
 		ThirdPersonCamera->SetActive(true);
 	}
 	else if (ThirdPersonCamera->IsActive())
 	{
+		bIsFirstPerson = true;
 		FirstPersonCamera->SetActive(true);
 		ThirdPersonCamera->SetActive(false);
 	}
 	else
 	{
+		bIsFirstPerson = true;
 		FirstPersonCamera->SetActive(true);
 		ThirdPersonCamera->SetActive(false);
 	}
 	return;
 }
 
+void AISPlayerCharacter::Interact()
+{
+	FHitResult HitResult = GetFirstWorldDynamicInReach();
+	AActor* ActorHit = HitResult.GetActor();
+	if (ActorHit)
+	{
+		UDoor* Door = ActorHit->FindComponentByClass<UDoor>();
+		if (Door)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("DOOR HIT"));
+			Door->Open(bHasKey);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NO DOOR"));
+		}
+		
+	}
+}
 
 void AISPlayerCharacter::StartSprint()
 {
 	//TODO adjust movement speed to be at max
-	PRINT("Sprinting");
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 }
 
 void AISPlayerCharacter::StopSprint()
 {
 	//TODO adjust movement speed to be at min
-	PRINT("Walking");
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void AISPlayerCharacter::StartCrouch()
 {
-	PRINT("Crouching");
+	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f)); //TODO figure out why this isn't actually scaling
 	Crouch();
-	if (!Mesh) { return; }
-	Mesh->SetWorldScale3D(FVector(1.f, 1.f, 1.f));
 }
 
 void AISPlayerCharacter::StopCrouch()
 {
-	PRINT("Standing");
+	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f)); //TODO figure out why this isn't actually scaling
 	UnCrouch();
-	if (!Mesh) { return; }
-	Mesh->SetWorldScale3D(FVector(1.f, 1.f, 1.f));
 }
 
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
@@ -150,24 +167,45 @@ void AISPlayerCharacter::MoveForward(float InputAmount)
 
 		//Get the forward vector and apply movement
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		//Apply movement
 		AddMovementInput(ForwardDirection, InputAmount);
 
 	}
 }
 
+//Mostly Follows the Unreal Third person example project's implementation to keep things simple
 void AISPlayerCharacter::MoveRight(float InputAmount)
 {
-	
+	if ((Controller != NULL) && InputAmount != 0.f)
+	{
+		//figure out which direction is forward
+		const FRotator ControllerRotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0, ControllerRotation.Yaw, 0);
+
+		//Get the forward vector and apply movement
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		//Apply movement
+		AddMovementInput(ForwardDirection, InputAmount);
+
+	}
 }
 
 void AISPlayerCharacter::LookUp(float InputAmount)
 {
-	
+	if (bIsFirstPerson)
+	{
+		AddControllerPitchInput(InputAmount * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	}
+	else
+	{
+		SpringArm->AddLocalRotation(FRotator(-InputAmount, 0.f, 0.f));
+	}
 }
 
 void AISPlayerCharacter::Turn(float InputAmount)
 {
-	
+
+	AddControllerYawInput(InputAmount * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
 
@@ -180,6 +218,48 @@ void AISPlayerCharacter::FindCameraComponents()
 void AISPlayerCharacter::SetupComponents()
 {
 	FirstPersonCamera->SetActive(true);
+	FirstPersonCamera->bUsePawnControlRotation = true;
 	ThirdPersonCamera->SetActive(false);
-	//MovementComponent = FindComponentByClass<UCharacterMovementComponent>();
+	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
+	SpringArm = FindComponentByClass<USpringArmComponent>();
+}
+
+FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
+{
+	///Line trace (AKA ray-cast) out to reach distance
+	FHitResult HitResult;
+	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+	GetWorld()->LineTraceSingleByObjectType(
+		HitResult,
+		GetReachLineStart(),
+		GetReachLineEnd(),
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic),
+		TraceParameters
+	);
+
+	return HitResult;
+}
+
+FVector AISPlayerCharacter::GetReachLineEnd()
+{
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	return (PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach);
+}
+
+FVector AISPlayerCharacter::GetReachLineStart()
+{
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	return PlayerViewPointLocation;
 }
