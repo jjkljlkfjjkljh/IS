@@ -6,8 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "Door.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDoorEvent, bool, bOpenForward);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class IS_API UDoor : public UActorComponent
 {
 	GENERATED_BODY()
@@ -25,15 +26,17 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	//Attempts to open door and returns true if a key is used
-	bool Open(bool HasKey);
+	bool AttemptToOpenDoor(bool HasKey, FVector DirectionToOpen);
 
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent OnOpen;
+
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent OnClose;
+
+private:
 	UPROPERTY(EditAnywhere, Category = Setup)
 	bool bDoorIsLocked = false;
 
-	FRotator OriginalRotation;
-
-	AActor* Door = nullptr;
-
-	float DoorOpenAngle = -80.f;
-	
+	bool bIsOpen = false;
 };

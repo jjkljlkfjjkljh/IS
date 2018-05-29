@@ -9,6 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "FirstPersonCameraComponent.h"
 #include "ThirdPersonCameraComponent.h"
+#include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
 #include "Door.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
@@ -58,6 +59,27 @@ void AISPlayerCharacter::BeginPlay()
 void AISPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+
+	GetActorEyesViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
+
+	DrawDebugLine(
+		GetWorld(),
+		PlayerViewPointLocation,
+		LineTraceEnd,
+		FColor(255, 0, 0),
+		false,
+		0.f,
+		0.f,
+		10.f
+	);
 
 }
 
@@ -122,7 +144,8 @@ void AISPlayerCharacter::Interact()
 		if (Door)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("DOOR HIT"));
-			Door->Open(bHasKey);
+			FVector PlayerFacingDirection = GetActorForwardVector();
+			Door->AttemptToOpenDoor(bHasKey, PlayerFacingDirection);
 		}
 		else
 		{
@@ -231,7 +254,7 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
 	GetWorld()->LineTraceSingleByObjectType(
 		HitResult,
-		GetReachLineStart(),
+		this->GetActorLocation(),
 		GetReachLineEnd(),
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic),
 		TraceParameters
