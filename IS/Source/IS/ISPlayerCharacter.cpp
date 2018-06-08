@@ -4,6 +4,7 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -27,7 +28,7 @@ AISPlayerCharacter::AISPlayerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	/// make sure the pawn is set up to be controlled
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
@@ -42,6 +43,10 @@ AISPlayerCharacter::AISPlayerCharacter()
 	GetCharacterMovement()->AirControl = AirControl;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
+	///Bind Overlap Events
+	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AISPlayerCharacter::OnOverlapBegin);
+	//CapsuleComponent->OnComponentEndOverlap.Add
 }
 
 // Called when the game starts or when spawned
@@ -92,7 +97,7 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	//Super::SetupPlayerInputComponent(PlayerInputComponent);
 	check(PlayerInputComponent);
 	///InputAction bindings
-	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &AISPlayerCharacter::SwitchCamera);
+	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &AISPlayerCharacter::PlayerSwitchCamera);
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AISPlayerCharacter::Interact);
 
@@ -113,16 +118,37 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAxis("Turn", this, &AISPlayerCharacter::Turn);
 }
 
-void AISPlayerCharacter::SwitchCamera()
+void AISPlayerCharacter::PlayerSwitchCamera()
 {
-	///Decide which camera is the active camera and switch to the other
-	if (FirstPersonCamera->IsActive())
+	if (bPlayerControlsCameraPerspective)
 	{
-		bIsFirstPerson = false;
-		FirstPersonCamera->SetActive(false);
-		ThirdPersonCamera->SetActive(true);
+		if (FirstPersonCamera->IsActive())
+		{
+			bIsFirstPerson = false;
+			FirstPersonCamera->SetActive(false);
+			ThirdPersonCamera->SetActive(true);
+		}
+		else if (ThirdPersonCamera->IsActive())
+		{
+			bIsFirstPerson = true;
+			FirstPersonCamera->SetActive(true);
+			ThirdPersonCamera->SetActive(false);
+		}
+		else
+		{
+			bIsFirstPerson = true;
+			FirstPersonCamera->SetActive(true);
+			ThirdPersonCamera->SetActive(false);
+		}
 	}
-	else if (ThirdPersonCamera->IsActive())
+	///Decide which camera is the active camera and switch to the other
+	return;
+}
+
+//If set to true the camera will be first person
+void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
+{
+	if (bSetFirstPerson)
 	{
 		bIsFirstPerson = true;
 		FirstPersonCamera->SetActive(true);
@@ -130,9 +156,9 @@ void AISPlayerCharacter::SwitchCamera()
 	}
 	else
 	{
-		bIsFirstPerson = true;
-		FirstPersonCamera->SetActive(true);
-		ThirdPersonCamera->SetActive(false);
+		bIsFirstPerson = false;
+		FirstPersonCamera->SetActive(false);
+		ThirdPersonCamera->SetActive(true);
 	}
 	return;
 }
@@ -162,24 +188,28 @@ void AISPlayerCharacter::StartSprint()
 {
 	//TODO adjust movement speed to be at max
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	return;
 }
 
 void AISPlayerCharacter::StopSprint()
 {
 	//TODO adjust movement speed to be at min
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	return;
 }
 
 void AISPlayerCharacter::StartCrouch()
 {
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f)); //TODO figure out why this isn't actually scaling
 	Crouch();
+	return;
 }
 
 void AISPlayerCharacter::StopCrouch()
 {
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f)); //TODO figure out why this isn't actually scaling
 	UnCrouch();
+	return;
 }
 
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
@@ -197,6 +227,7 @@ void AISPlayerCharacter::MoveForward(float InputAmount)
 		AddMovementInput(ForwardDirection, InputAmount);
 
 	}
+	return;
 }
 
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
@@ -214,6 +245,7 @@ void AISPlayerCharacter::MoveRight(float InputAmount)
 		AddMovementInput(ForwardDirection, InputAmount);
 
 	}
+	return;
 }
 
 void AISPlayerCharacter::LookUp(float InputAmount)
@@ -226,12 +258,13 @@ void AISPlayerCharacter::LookUp(float InputAmount)
 	{
 		SpringArm->AddLocalRotation(FRotator(-InputAmount, 0.f, 0.f));
 	}
+	return;
 }
 
 void AISPlayerCharacter::Turn(float InputAmount)
 {
-
 	AddControllerYawInput(InputAmount * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	return;
 }
 
 
@@ -239,6 +272,7 @@ void AISPlayerCharacter::FindCameraComponents()
 {
 	FirstPersonCamera = FindComponentByClass<UFirstPersonCameraComponent>();
 	ThirdPersonCamera = FindComponentByClass<UThirdPersonCameraComponent>();
+	return;
 }
 
 void AISPlayerCharacter::SetupComponents()
@@ -248,6 +282,8 @@ void AISPlayerCharacter::SetupComponents()
 	ThirdPersonCamera->SetActive(false);
 	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
+	CapsuleComponent = FindComponentByClass<UCapsuleComponent>();
+	return;
 }
 
 //Line trace out and return the first world dynamic object in reach
@@ -275,4 +311,14 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	);
 
 	return HitResult;
+}
+
+void AISPlayerCharacter::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+
+}
+
+void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
+{
+
 }

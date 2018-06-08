@@ -35,7 +35,8 @@ bool UDoor::AttemptToOpenDoor(bool HasKey, FVector PlayerFacingDirection)
 {
 	///Determine which direction to open the door
 	bool bOpenForward;
-	FVector DoorForwardVector = GetOwner()->GetActorForwardVector();
+	//Get the right vector as the forward because the door faces the Y axis
+	FVector DoorForwardVector = GetOwner()->GetActorRightVector();
 	///Check if player forward vector is closest to the doors forward vector or if they are opposite
 	//If this value is greater than 0 both vectors are facing each other. If they are less than 0 they are facing the same direction
 	float DotProduct = FVector::DotProduct(PlayerFacingDirection, DoorForwardVector);

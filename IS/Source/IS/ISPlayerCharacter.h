@@ -10,6 +10,7 @@
 class UFirstPersonCameraComponent;
 class UThirdPersonCameraComponent;
 class UViewRotator;
+class UCapsuleComponent;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -32,7 +33,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	//Input functions
-	void SwitchCamera();
+	void PlayerSwitchCamera();
+	void EnvironmentSwitchCamera(bool bIsFirstPerson);
 	void Interact();
 	void StartSprint();
 	void StopSprint();
@@ -53,6 +55,13 @@ private:
 
 	FHitResult GetFirstWorldDynamicInReach();
 
+	UFUNCTION()
+		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	// declare overlap end function
+	UFUNCTION()
+		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	UFirstPersonCameraComponent * FirstPersonCamera = nullptr;
 	UThirdPersonCameraComponent * ThirdPersonCamera = nullptr;
 
@@ -63,6 +72,8 @@ private:
 	UStaticMeshComponent* MeshComponent = nullptr;;
 
 	USceneComponent* SpringArm = nullptr;
+
+	UCapsuleComponent* CapsuleComponent = nullptr;
 
 	float BaseTurnRate;
 	float BaseLookUpRate;
@@ -86,6 +97,10 @@ private:
 	//Wether or not to display the interact debug line
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	bool bShowDebugLine = false;
+
+	//Wether or not the player can control if the camera is first or third person
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	bool bPlayerControlsCameraPerspective = true;
 
 	bool bIsFirstPerson = true;
 
