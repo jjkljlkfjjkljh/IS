@@ -45,8 +45,9 @@ AISPlayerCharacter::AISPlayerCharacter()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	///Bind Overlap Events
-	//CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AISPlayerCharacter::OnOverlapBegin);
-	//CapsuleComponent->OnComponentEndOverlap.Add
+	CapsuleComponent = FindComponentByClass<UCapsuleComponent>();
+	CapsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &AISPlayerCharacter::OnOverlapBegin);
+	CapsuleComponent->OnComponentEndOverlap.AddDynamic(this, &AISPlayerCharacter::OnOverlapEnd);
 }
 
 // Called when the game starts or when spawned
@@ -148,17 +149,20 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 //If set to true the camera will be first person
 void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 {
-	if (bSetFirstPerson)
+	if (!bPlayerControlsCameraPerspective)
 	{
-		bIsFirstPerson = true;
-		FirstPersonCamera->SetActive(true);
-		ThirdPersonCamera->SetActive(false);
-	}
-	else
-	{
-		bIsFirstPerson = false;
-		FirstPersonCamera->SetActive(false);
-		ThirdPersonCamera->SetActive(true);
+		if (bSetFirstPerson)
+		{
+			bIsFirstPerson = true;
+			FirstPersonCamera->SetActive(true);
+			ThirdPersonCamera->SetActive(false);
+		}
+		else
+		{
+			bIsFirstPerson = false;
+			FirstPersonCamera->SetActive(false);
+			ThirdPersonCamera->SetActive(true);
+		}
 	}
 	return;
 }
@@ -277,12 +281,11 @@ void AISPlayerCharacter::FindCameraComponents()
 
 void AISPlayerCharacter::SetupComponents()
 {
-	FirstPersonCamera->SetActive(true);
+	FirstPersonCamera->SetActive(false);
 	FirstPersonCamera->bUsePawnControlRotation = true;
-	ThirdPersonCamera->SetActive(false);
+	ThirdPersonCamera->SetActive(true);
 	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
-	CapsuleComponent = FindComponentByClass<UCapsuleComponent>();
 	return;
 }
 
@@ -315,10 +318,22 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 
 void AISPlayerCharacter::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-
+	if (OtherActor && (OtherActor != this) && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName("Inside")))
+		{
+			EnvironmentSwitchCamera(true);
+		}
+	}
 }
 
 void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
 {
-
+	if (OtherActor && (OtherActor != this) && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName("Inside")))
+		{
+			EnvironmentSwitchCamera(false);
+		}
+	}
 }
