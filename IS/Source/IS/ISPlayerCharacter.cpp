@@ -60,27 +60,30 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector PlayerViewPointLocation;
-	FRotator PlayerViewPointRotation;
 
-	GetActorEyesViewPoint(
-		PlayerViewPointLocation,
-		PlayerViewPointRotation
-	);
+	if (bShowDebugLine)
+	{
+		FVector PlayerViewPointLocation;
+		FRotator PlayerViewPointRotation;
 
-	FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
+		GetActorEyesViewPoint(
+			PlayerViewPointLocation,
+			PlayerViewPointRotation
+		);
 
-	DrawDebugLine(
-		GetWorld(),
-		PlayerViewPointLocation,
-		LineTraceEnd,
-		FColor(255, 0, 0),
-		false,
-		0.f,
-		0.f,
-		10.f
-	);
+		FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
 
+		DrawDebugLine(
+			GetWorld(),
+			PlayerViewPointLocation,
+			LineTraceEnd,
+			FColor(255, 0, 0),
+			false,
+			0.f,
+			0.f,
+			10.f
+		);
+	}
 }
 
 // Called to bind functionality to input
@@ -247,42 +250,29 @@ void AISPlayerCharacter::SetupComponents()
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 }
 
+//Line trace out and return the first world dynamic object in reach
 FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 {
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+
+	GetActorEyesViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
+
 	///Line trace (AKA ray-cast) out to reach distance
 	FHitResult HitResult;
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
 	GetWorld()->LineTraceSingleByObjectType(
 		HitResult,
-		this->GetActorLocation(),
-		GetReachLineEnd(),
+		PlayerViewPointLocation,
+		LineTraceEnd,
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic),
 		TraceParameters
 	);
 
 	return HitResult;
-}
-
-FVector AISPlayerCharacter::GetReachLineEnd()
-{
-	FVector PlayerViewPointLocation;
-	FRotator PlayerViewPointRotation;
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
-		PlayerViewPointLocation,
-		PlayerViewPointRotation
-	);
-
-	return (PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach);
-}
-
-FVector AISPlayerCharacter::GetReachLineStart()
-{
-	FVector PlayerViewPointLocation;
-	FRotator PlayerViewPointRotation;
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
-		PlayerViewPointLocation,
-		PlayerViewPointRotation
-	);
-
-	return PlayerViewPointLocation;
 }

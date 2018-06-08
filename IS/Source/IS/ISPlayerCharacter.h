@@ -53,12 +53,6 @@ private:
 
 	FHitResult GetFirstWorldDynamicInReach();
 
-	//returns current end of reach line
-	FVector GetReachLineEnd();
-
-	//returns current start of reach line
-	FVector GetReachLineStart();
-
 	UFirstPersonCameraComponent * FirstPersonCamera = nullptr;
 	UThirdPersonCameraComponent * ThirdPersonCamera = nullptr;
 
@@ -88,6 +82,10 @@ private:
 	//percentage of max walk speed allowed to move while in air
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float AirControl = 0.3;
+
+	//Wether or not to display the interact debug line
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	bool bShowDebugLine = false;
 
 	bool bIsFirstPerson = true;
 
