@@ -14,7 +14,8 @@ class IS_API AISPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
-	
+public:
+	AISPlayerController();
 	
 	
 };

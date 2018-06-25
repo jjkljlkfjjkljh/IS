@@ -5,6 +5,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Components/CapsuleComponent.h"
+#include "DynamicCamera.h"
 #include "Engine/World.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -13,6 +14,7 @@
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
 #include "Door.h"
+#include "Camera/CameraActor.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 #define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
@@ -36,6 +38,8 @@ AISPlayerCharacter::AISPlayerCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
+	
+
 	///Set up character movement component with default values
 	GetCharacterMovement()->bOrientRotationToMovement = true; //Move character in direction of input
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
@@ -57,7 +61,7 @@ void AISPlayerCharacter::BeginPlay()
 
 	Player = this;
 
-	FindCameraComponents();
+	SpawnAndSetCamera();
 	SetupComponents();
 }
 
@@ -123,24 +127,7 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 {
 	if (bPlayerControlsCameraPerspective)
 	{
-		if (FirstPersonCamera->IsActive())
-		{
-			bIsFirstPerson = false;
-			FirstPersonCamera->SetActive(false);
-			ThirdPersonCamera->SetActive(true);
-		}
-		else if (ThirdPersonCamera->IsActive())
-		{
-			bIsFirstPerson = true;
-			FirstPersonCamera->SetActive(true);
-			ThirdPersonCamera->SetActive(false);
-		}
-		else
-		{
-			bIsFirstPerson = true;
-			FirstPersonCamera->SetActive(true);
-			ThirdPersonCamera->SetActive(false);
-		}
+		//TODO add back camera switch functionality
 	}
 	///Decide which camera is the active camera and switch to the other
 	return;
@@ -154,14 +141,12 @@ void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 		if (bSetFirstPerson)
 		{
 			bIsFirstPerson = true;
-			FirstPersonCamera->SetActive(true);
-			ThirdPersonCamera->SetActive(false);
+			//TODO add back camera switch functionality
 		}
 		else
 		{
 			bIsFirstPerson = false;
-			FirstPersonCamera->SetActive(false);
-			ThirdPersonCamera->SetActive(true);
+			//TODO add back camera switch functionality
 		}
 	}
 	return;
@@ -271,19 +256,12 @@ void AISPlayerCharacter::Turn(float InputAmount)
 	return;
 }
 
-
-void AISPlayerCharacter::FindCameraComponents()
-{
-	FirstPersonCamera = FindComponentByClass<UFirstPersonCameraComponent>();
-	ThirdPersonCamera = FindComponentByClass<UThirdPersonCameraComponent>();
-	return;
-}
-
 void AISPlayerCharacter::SetupComponents()
 {
-	FirstPersonCamera->SetActive(false);
-	FirstPersonCamera->bUsePawnControlRotation = true;
-	ThirdPersonCamera->SetActive(true);
+	//TODO Clean up commented out lines
+	//FirstPersonCamera->SetActive(false);
+	//FirstPersonCamera->bUsePawnControlRotation = true;
+	//ThirdPersonCamera->SetActive(true);
 	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	return;
@@ -314,6 +292,15 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	);
 
 	return HitResult;
+}
+
+ACameraActor* AISPlayerCharacter::SpawnAndSetCamera()
+{
+	FVector Location(0.0f, 0.0f, 0.0f);
+	FRotator Rotation(0.0f, 0.0f, 0.0f);
+	ACameraActor* Camera = GetWorld()->SpawnActor<ADynamicCamera>(Location, Rotation);
+	GetWorld()->GetFirstPlayerController()->SetViewTarget(Camera);
+	return Camera;
 }
 
 void AISPlayerCharacter::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)

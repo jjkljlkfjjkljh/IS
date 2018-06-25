@@ -2,6 +2,9 @@
 
 #include "ISPlayerController.h"
 
-
+AISPlayerController::AISPlayerController()
+{
+	bAutoManageActiveCameraTarget = false;
+}
 
 

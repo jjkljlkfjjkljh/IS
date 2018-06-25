@@ -11,6 +11,7 @@ class UFirstPersonCameraComponent;
 class UThirdPersonCameraComponent;
 class UViewRotator;
 class UCapsuleComponent;
+class ACameraActor;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -45,8 +46,8 @@ public:
 	void LookUp(float InputAmount);
 	void Turn(float InputAmount);
 
-	//Finds the camera components and sets them to the appropriate variables
-	void FindCameraComponents();
+	//Spawns dynamic camera
+	ACameraActor* SpawnAndSetCamera();
 
 	//Mkaes sure the game starts off with the correct camera settings
 	void SetupComponents();
@@ -62,9 +63,6 @@ private:
 	UFUNCTION()
 		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	UFirstPersonCameraComponent * FirstPersonCamera = nullptr;
-	UThirdPersonCameraComponent * ThirdPersonCamera = nullptr;
-
 	//UCharacterMovementComponent* MovementComponent = nullptr;
 
 	AActor* Player;
@@ -74,6 +72,8 @@ private:
 	USceneComponent* SpringArm = nullptr;
 
 	UCapsuleComponent* CapsuleComponent = nullptr;
+
+	ACameraActor* DynamicCamera = nullptr;
 
 	float BaseTurnRate;
 	float BaseLookUpRate;
