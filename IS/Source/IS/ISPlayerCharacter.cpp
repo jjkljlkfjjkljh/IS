@@ -9,8 +9,10 @@
 #include "Engine/World.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "FirstPersonCameraComponent.h"
+#include "FirstPersonCameraComponent.h" 
 #include "ThirdPersonCameraComponent.h"
+#include "FirstPersonCameraLocation.h"
+#include "ThirdPersonCameraLocation.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
 #include "Door.h"
@@ -61,7 +63,7 @@ void AISPlayerCharacter::BeginPlay()
 
 	Player = this;
 
-	SpawnAndSetCamera();
+	DynamicCamera = SpawnAndSetCamera();
 	SetupComponents();
 }
 
@@ -70,6 +72,16 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (DynamicCamera->bIsFirstPerson)
+	{
+		FTransform FirstPersonLocation = FirstPersonCameraLocation->GetComponentTransform();
+		DynamicCamera->SetFirstPersonLocation(FirstPersonLocation, DeltaTime);
+	}
+	else
+	{
+		FTransform ThirdPersonLocation = ThirdPersonCameraLocation->GetComponentTransform();
+		DynamicCamera->SetThirdPersonLocation(ThirdPersonLocation, DeltaTime);
+	}
 
 	if (bShowDebugLine)
 	{
@@ -128,8 +140,15 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 	if (bPlayerControlsCameraPerspective)
 	{
 		//TODO add back camera switch functionality
+		if (DynamicCamera->bIsFirstPerson)
+		{
+			DynamicCamera->bIsFirstPerson = false;
+		}
+		else
+		{
+			DynamicCamera->bIsFirstPerson = true;
+		}
 	}
-	///Decide which camera is the active camera and switch to the other
 	return;
 }
 
@@ -138,15 +157,13 @@ void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 {
 	if (!bPlayerControlsCameraPerspective)
 	{
-		if (bSetFirstPerson)
+		if (DynamicCamera->bIsFirstPerson)
 		{
-			bIsFirstPerson = true;
-			//TODO add back camera switch functionality
+			DynamicCamera->bIsFirstPerson = false;
 		}
 		else
 		{
-			bIsFirstPerson = false;
-			//TODO add back camera switch functionality
+			DynamicCamera->bIsFirstPerson = true;
 		}
 	}
 	return;
@@ -161,13 +178,8 @@ void AISPlayerCharacter::Interact()
 		UDoor* Door = ActorHit->FindComponentByClass<UDoor>();
 		if (Door)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("DOOR HIT"));
 			FVector PlayerFacingDirection = GetActorForwardVector();
 			Door->AttemptToOpenDoor(bHasKey, PlayerFacingDirection);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("NO DOOR"));
 		}
 		
 	}
@@ -237,9 +249,10 @@ void AISPlayerCharacter::MoveRight(float InputAmount)
 	return;
 }
 
+//TODO Clamp the look height anf ix the player looking up and down in first person
 void AISPlayerCharacter::LookUp(float InputAmount)
 {
-	if (bIsFirstPerson)
+	if (DynamicCamera->bIsFirstPerson)
 	{
 		AddControllerPitchInput(InputAmount * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 	}
@@ -264,6 +277,8 @@ void AISPlayerCharacter::SetupComponents()
 	//ThirdPersonCamera->SetActive(true);
 	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
+	FirstPersonCameraLocation = FindComponentByClass<UFirstPersonCameraLocation>();
+	ThirdPersonCameraLocation = FindComponentByClass<UThirdPersonCameraLocation>();
 	return;
 }
 
@@ -294,11 +309,11 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	return HitResult;
 }
 
-ACameraActor* AISPlayerCharacter::SpawnAndSetCamera()
+ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()
 {
 	FVector Location(0.0f, 0.0f, 0.0f);
 	FRotator Rotation(0.0f, 0.0f, 0.0f);
-	ACameraActor* Camera = GetWorld()->SpawnActor<ADynamicCamera>(Location, Rotation);
+	ADynamicCamera* Camera = GetWorld()->SpawnActor<ADynamicCamera>(Location, Rotation);
 	GetWorld()->GetFirstPlayerController()->SetViewTarget(Camera);
 	return Camera;
 }

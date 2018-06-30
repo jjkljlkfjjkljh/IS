@@ -7,11 +7,11 @@
 #include "ISPlayerCharacter.generated.h"
 
 ///Forward Declarations
-class UFirstPersonCameraComponent;
-class UThirdPersonCameraComponent;
+class UFirstPersonCameraLocation;
+class UThirdPersonCameraLocation;
 class UViewRotator;
 class UCapsuleComponent;
-class ACameraActor;
+class ADynamicCamera;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -47,7 +47,7 @@ public:
 	void Turn(float InputAmount);
 
 	//Spawns dynamic camera
-	ACameraActor* SpawnAndSetCamera();
+	ADynamicCamera* SpawnAndSetCamera();
 
 	//Mkaes sure the game starts off with the correct camera settings
 	void SetupComponents();
@@ -73,7 +73,12 @@ private:
 
 	UCapsuleComponent* CapsuleComponent = nullptr;
 
-	ACameraActor* DynamicCamera = nullptr;
+	ADynamicCamera* DynamicCamera = nullptr;
+
+	UFirstPersonCameraLocation* FirstPersonCameraLocation = nullptr;
+	UThirdPersonCameraLocation* ThirdPersonCameraLocation = nullptr;
+
+
 
 	float BaseTurnRate;
 	float BaseLookUpRate;
@@ -101,8 +106,6 @@ private:
 	//Wether or not the player can control if the camera is first or third person
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	bool bPlayerControlsCameraPerspective = true;
-
-	bool bIsFirstPerson = false;
 
 	//How far ahead of the player can we reach in cm
 	float Reach = 200.f;

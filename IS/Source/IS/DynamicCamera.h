@@ -26,17 +26,28 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	bool bIsFirstPerson = false;
 
 	bool bIsPlayerControlled = true;
 
-private:
-	void SetFirstPersonLocation();
+	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
 
-	void SetThirdPersonLocation();
+	void SetThirdPersonLocation(FTransform TargetTransform, float DeltaTime);
+
+private:
+
+	void LerpToNewTransform(FTransform Target, float DeltaTime);
+
+	bool bWasFirstPerson = false;
+	bool bTransitioning = false;
+
+	FTransform CurrentTransform;
+
+	float AlphaMultiplier = 0.3f;
+	float Alpha = 0.0f;
+
+	float ClosestDistanceAllowed = 120.0f;
 
 	AActor* Player = nullptr;
 	UFirstPersonCameraLocation* FirstPersonLocation;
