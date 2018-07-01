@@ -33,11 +33,13 @@ public:
 
 	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
 
-	void SetThirdPersonLocation(FTransform TargetTransform, float DeltaTime);
+	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime);
 
 private:
 
 	void LerpToNewTransform(FTransform Target, float DeltaTime);
+
+	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition);
 
 	bool bWasFirstPerson = false;
 	bool bTransitioning = false;
@@ -47,7 +49,8 @@ private:
 	float AlphaMultiplier = 0.3f;
 	float Alpha = 0.0f;
 
-	float ClosestDistanceAllowed = 120.0f;
+	float ClosestDistanceAllowed = 200.0f;
+	float MaxHeightAbovePlayer = 120.0f;
 
 	AActor* Player = nullptr;
 	UFirstPersonCameraLocation* FirstPersonLocation;

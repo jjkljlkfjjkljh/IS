@@ -80,7 +80,7 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	else
 	{
 		FTransform ThirdPersonLocation = ThirdPersonCameraLocation->GetComponentTransform();
-		DynamicCamera->SetThirdPersonLocation(ThirdPersonLocation, DeltaTime);
+		DynamicCamera->SetThirdPersonLocation(ThirdPersonLocation, GetActorLocation(), DeltaTime);
 	}
 
 	if (bShowDebugLine)
