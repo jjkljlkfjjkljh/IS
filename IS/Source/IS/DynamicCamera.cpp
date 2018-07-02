@@ -44,6 +44,11 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	{
 		JumpStartLocation = GetActorLocation();
 	}
+	if (!bCrouchStartLocationSet)
+	{
+		CrouchStartLocation = GetActorLocation();
+	}
+
 	//jump to the correct position if in a transition from one location to another
 	if (bWasFirstPerson || bTransitioning)
 	{
@@ -52,12 +57,14 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		LerpToNewTransform(TargetTransform, DeltaTime);
 		return;
 	}
+
 	//Prevent the camera from going inside the player. If the camera is too close reposition it above the player
 	if ((PlayerPosition - TargetTransform.GetLocation()).Size() < ClosestDistanceAllowed)
 	{
 		RepositionThirdPersonCamera(TargetTransform, PlayerPosition);
 		return;
 	}
+
 	//position the camera if the player is jumping or in the air
 	if (bIsFalling)
 	{
@@ -75,6 +82,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 			bInAir = false;
 		}
 	}
+
 	//Make sure the camera lerps back to a normal position after the player lands from a jump or fall
 	if (bJustLanded)
 	{
@@ -83,8 +91,13 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	}
 	if (bIsCrouching)
 	{
+		bCrouchStartLocationSet = true;
 		CameraPositionDuringCrouch(TargetTransform, PlayerPosition, DeltaTime);
 		return;
+	}
+	else
+	{
+		bCrouchStartLocationSet = false;
 	}
 
 	//if none of the above conditions need met then set the default third person location
@@ -127,6 +140,8 @@ void ADynamicCamera::LerpToNewTransform(FTransform Target, float DeltaTime)
 //Find a new location above the player to position the camera
 void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition)
 {
+	//TODO possible change the lerp to always look a tthe player while lerping only location
+
 	///Calculate an alpha value between 0 and 1 for where the camera
 	///is in relation to the center of the player and the spring arm
 	float DistanceFromPlayerAlpha = 1 - (((PlayerPosition - Target.GetLocation()).Size()) / ClosestDistanceAllowed);
@@ -160,6 +175,20 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 
 void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
 {
-	//TODO set up specific camera behavior for when the player is crouched
+	FVector CrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
+	//SetActorLocation(CrouchCameraLocation);
+
+	FVector CameraLocation = GetActorLocation();
+	FVector PlayerLocation = Player->GetActorLocation();
+	FVector LookDirection = PlayerLocation - CameraLocation;
+	LookDirection.Normalize();
+	FRotator CrouchRotation = LookDirection.Rotation();
+
+	//SetActorRotation(CrouchRotation);
+
+	FTransform CrouchTarget = FTransform(CrouchRotation, CrouchCameraLocation);
+
+	LerpToNewTransform(CrouchTarget, DeltaTime);
+		
 	return;
 }

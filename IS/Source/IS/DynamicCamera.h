@@ -47,9 +47,11 @@ private:
 	bool bInAir = false;
 	bool bJustLanded = false;
 	bool bJumpStartLocationSet = false;
+	bool bCrouchStartLocationSet = false;
 
 	FTransform CurrentTransform;
 	FVector JumpStartLocation;
+	FVector CrouchStartLocation;
 
 	float AlphaMultiplier = 0.3f;
 	float Alpha = 0.0f;
