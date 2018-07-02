@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,6 +5,7 @@
 #include "DynamicCamera.generated.h"
 
 ///Forward Declarations
+class AISPlayerCharacter;
 class UFirstPersonCameraLocation;
 class UThirdPersonCameraLocation;
 /**
@@ -16,10 +15,6 @@ UCLASS()
 class IS_API ADynamicCamera : public ACameraActor
 {
 	GENERATED_BODY()
-	
-public:
-	// Sets default values for this component's properties
-	ADynamicCamera();
 	
 protected:
 	// Called when the game starts
@@ -33,7 +28,9 @@ public:
 
 	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
 
-	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime);
+	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime);
+
+	AISPlayerCharacter* Player = nullptr;
 
 private:
 
@@ -41,18 +38,23 @@ private:
 
 	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition);
 
+	void CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition);
+
+	void CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime);
+
 	bool bWasFirstPerson = false;
 	bool bTransitioning = false;
+	bool bInAir = false;
+	bool bJustLanded = false;
+	bool bJumpStartLocationSet = false;
 
 	FTransform CurrentTransform;
+	FVector JumpStartLocation;
 
 	float AlphaMultiplier = 0.3f;
 	float Alpha = 0.0f;
+	float AlphaOverrideDistance = 15.0f;
 
 	float ClosestDistanceAllowed = 200.0f;
 	float MaxHeightAbovePlayer = 120.0f;
-
-	AActor* Player = nullptr;
-	UFirstPersonCameraLocation* FirstPersonLocation;
-	UThirdPersonCameraLocation* ThirdPersonLocation;
 };

@@ -1,9 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "DynamicCamera.h"
 #include "FirstPersonCameraLocation.h"
 #include "ThirdPersonCameraLocation.h"
 #include "ISPlayerCharacter.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 
 
@@ -14,12 +13,6 @@
 
 #define WARNING(x) UE_LOG(LogTemp, Warning, TEXT(x));
 #define ERROR(x) UE_LOG(LogTemp, Error, TEXT(x));
-
-ADynamicCamera::ADynamicCamera()
-{
-	
-}
-
 
 void ADynamicCamera::BeginPlay()
 {
@@ -43,9 +36,14 @@ void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, float De
 	SetActorTransform(TargetTransform);
 	return;
 }
-//Set the camera to amtch the third person location on the player character
-void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
+//Set the camera to match the third person location on the player character
+void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
+	FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime)
 {
+	if (!bJumpStartLocationSet)
+	{
+		JumpStartLocation = GetActorLocation();
+	}
 	//jump to the correct position if in a transition from one location to another
 	if (bWasFirstPerson || bTransitioning)
 	{
@@ -60,6 +58,34 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform, FVector 
 		RepositionThirdPersonCamera(TargetTransform, PlayerPosition);
 		return;
 	}
+	//position the camera if the player is jumping or in the air
+	if (bIsFalling)
+	{
+		bInAir = true;
+		bJumpStartLocationSet = true;
+		CameraPositionDuringJump(TargetTransform, PlayerPosition);
+		return;
+	}
+	else
+	{
+		bJumpStartLocationSet = false;
+		if (bInAir)
+		{
+			bJustLanded = true;
+			bInAir = false;
+		}
+	}
+	//Make sure the camera lerps back to a normal position after the player lands from a jump or fall
+	if (bJustLanded)
+	{
+		LerpToNewTransform(TargetTransform, DeltaTime);
+		return;
+	}
+	if (bIsCrouching)
+	{
+		CameraPositionDuringCrouch(TargetTransform, PlayerPosition, DeltaTime);
+		return;
+	}
 
 	//if none of the above conditions need met then set the default third person location
 	SetActorTransform(TargetTransform);
@@ -71,13 +97,19 @@ void ADynamicCamera::LerpToNewTransform(FTransform Target, float DeltaTime)
 {
 	Alpha += (DeltaTime * AlphaMultiplier);
 
-	//check if the target location is reached
-	if ((Alpha >= 1.0f) || ((this->GetActorLocation() - Target.GetLocation()).Size() < 10.0f ))
+	//check if the target location is reached or if it is close enough to set the true location
+	//TODO fix the sudden jerkiness of the override distance
+	if ((Alpha >= 1.0f) || ((this->GetActorLocation() - Target.GetLocation()).Size() < AlphaOverrideDistance ))
 	{
 		//set the exact location of the target and reset lerp values
+		//PRINT_GREEN("RESET"); //displays to show when the lerp is reset and control of the camera is default again
 		SetActorTransform(Target);
 		bTransitioning = false;
 		Alpha = 0.0f;
+		if (bJustLanded)
+		{
+			bJustLanded = false;
+		}
 		return;
 	}
 	
@@ -89,21 +121,45 @@ void ADynamicCamera::LerpToNewTransform(FTransform Target, float DeltaTime)
 
 	SetActorLocation(LerpVector);
 	SetActorRotation(LerpRotator);
-
 	return;
 }
 
 //Find a new location above the player to position the camera
 void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition)
 {
+	///Calculate an alpha value between 0 and 1 for where the camera
+	///is in relation to the center of the player and the spring arm
 	float DistanceFromPlayerAlpha = 1 - (((PlayerPosition - Target.GetLocation()).Size()) / ClosestDistanceAllowed);
 
-	UE_LOG(LogTemp, Warning, TEXT("Distnace Alpha is: %f"), DistanceFromPlayerAlpha);
-
+	///Decide how high to adjust the camera to move smoothly from
+	///the spring arm location to directly above the player based on the alpha value
 	float NewLocationZ = Target.GetLocation().Z + (MaxHeightAbovePlayer * DistanceFromPlayerAlpha);
 
 	SetActorLocation(FVector(Target.GetLocation().X, Target.GetLocation().Y, NewLocationZ));
 	SetActorRotation(Target.Rotator());
+	return;
+}
 
+//Called to handle the camera while the player is jumping or falling
+void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition)
+{
+	//TODO fix the camera for when the player moves the camera up or down during a jump
+
+	///Set the location of the camera to match the height of the start of the jump but the player controlled position
+	FVector NewCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, JumpStartLocation.Z);
+	SetActorLocation(NewCameraLocation);
+
+	///get the look direction from the camera to the player and set the correct rotation
+	FVector CameraLocation = GetActorLocation();
+	FVector PlayerLocation = Player->GetActorLocation();
+	FVector LookDirection = PlayerLocation - CameraLocation;
+	LookDirection.Normalize();
+	SetActorRotation(LookDirection.Rotation());
+	return;
+}
+
+void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
+{
+	//TODO set up specific camera behavior for when the player is crouched
 	return;
 }

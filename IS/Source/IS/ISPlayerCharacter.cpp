@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "ISPlayerCharacter.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -80,7 +78,12 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	else
 	{
 		FTransform ThirdPersonLocation = ThirdPersonCameraLocation->GetComponentTransform();
-		DynamicCamera->SetThirdPersonLocation(ThirdPersonLocation, GetActorLocation(), DeltaTime);
+		DynamicCamera->SetThirdPersonLocation(
+			ThirdPersonLocation, 
+			GetActorLocation(), 
+			GetCharacterMovement()->IsFalling(), 
+			bIsCrouched,
+			DeltaTime);
 	}
 
 	if (bShowDebugLine)
@@ -249,7 +252,7 @@ void AISPlayerCharacter::MoveRight(float InputAmount)
 	return;
 }
 
-//TODO Clamp the look height anf ix the player looking up and down in first person
+//TODO Clamp the look height and fix the player looking up and down in first person
 void AISPlayerCharacter::LookUp(float InputAmount)
 {
 	if (DynamicCamera->bIsFirstPerson)
@@ -315,6 +318,7 @@ ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()
 	FRotator Rotation(0.0f, 0.0f, 0.0f);
 	ADynamicCamera* Camera = GetWorld()->SpawnActor<ADynamicCamera>(Location, Rotation);
 	GetWorld()->GetFirstPlayerController()->SetViewTarget(Camera);
+	Camera->Player = this;
 	return Camera;
 }
 
