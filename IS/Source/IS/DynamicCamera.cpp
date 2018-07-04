@@ -2,6 +2,7 @@
 #include "FirstPersonCameraLocation.h"
 #include "ThirdPersonCameraLocation.h"
 #include "ISPlayerCharacter.h"
+#include "TransformCheck.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 
@@ -28,7 +29,7 @@ void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, float De
 	{
 		bWasFirstPerson = true;
 		bTransitioning = true;
-		LerpToNewTransform(TargetTransform, DeltaTime);
+		LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
 		return;
 	}
 
@@ -54,7 +55,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	{
 		bWasFirstPerson = false;
 		bTransitioning = true;
-		LerpToNewTransform(TargetTransform, DeltaTime);
+		LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
 		return;
 	}
 
@@ -79,6 +80,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		if (bInAir)
 		{
 			bJustLanded = true;
+			bFinishedCrouchTransition = false;
 			bInAir = false;
 		}
 	}
@@ -86,7 +88,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	//Make sure the camera lerps back to a normal position after the player lands from a jump or fall
 	if (bJustLanded)
 	{
-		LerpToNewTransform(TargetTransform, DeltaTime);
+		LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
 		return;
 	}
 	if (bIsCrouching)
@@ -98,6 +100,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	else
 	{
 		bCrouchStartLocationSet = false;
+		bFinishedCrouchTransition = false;
 	}
 
 	//if none of the above conditions need met then set the default third person location
@@ -106,24 +109,43 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 }
 
 //Lerp from the current camera position to the target position
-void ADynamicCamera::LerpToNewTransform(FTransform Target, float DeltaTime)
+void ADynamicCamera::LerpToNewTransform(bool RotationMatters, FTransform Target, float AlphaOverrideDistance, float TimeScale, float DeltaTime)
 {
-	Alpha += (DeltaTime * AlphaMultiplier);
+	Alpha += (DeltaTime * AlphaMultiplier * TimeScale);
+
+	PRINT_GREEN("LERP");
 
 	//check if the target location is reached or if it is close enough to set the true location
 	//TODO fix the sudden jerkiness of the override distance
 	if ((Alpha >= 1.0f) || ((this->GetActorLocation() - Target.GetLocation()).Size() < AlphaOverrideDistance ))
 	{
-		//set the exact location of the target and reset lerp values
-		//PRINT_GREEN("RESET"); //displays to show when the lerp is reset and control of the camera is default again
-		SetActorTransform(Target);
-		bTransitioning = false;
-		Alpha = 0.0f;
-		if (bJustLanded)
+		if (RotationMatters)
 		{
-			bJustLanded = false;
+			if (TransformCheck::RotationIsWithinLimit(GetActorRotation(), Target.Rotator(), 0.5f))
+			{
+				//set the exact transform of the target and reset lerp values
+				SetActorTransform(Target);
+				bTransitioning = false;
+				Alpha = 0.0f;
+				if (bJustLanded)
+				{
+					bJustLanded = false;
+				}
+				return;
+			}
 		}
-		return;
+		else
+		{
+			//set the exact transform of the target and reset lerp values
+			SetActorTransform(Target);
+			bTransitioning = false;
+			Alpha = 0.0f;
+			if (bJustLanded)
+			{
+				bJustLanded = false;
+			}
+			return;
+		}
 	}
 	
 	//Lerp between the current position and the target 
@@ -175,8 +197,32 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 
 void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
 {
-	FVector CrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
-	//SetActorLocation(CrouchCameraLocation);
+	if (!bFinishedCrouchTransition)
+	{
+		FVector CrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
+		float DistanceToTarget = (GetActorLocation() - CrouchCameraLocation).Size();
+		if (TransformCheck::RotationIsWithinLimit(GetActorRotation(), TargetTransform.Rotator(), 0.5f))
+		{
+			bFinishedCrouchTransition = true;
+		}
+		else
+		{
+			/* Uncomment to set a custom look rotation for camera when crouching
+			FVector CameraLocation = GetActorLocation();
+			FVector PlayerLocation = Player->GetActorLocation();
+			FVector LookDirection = PlayerLocation - CameraLocation;
+			LookDirection.Normalize();
+			FRotator CrouchRotation = LookDirection.Rotation();
+			*/
+
+			//FTransform CrouchTarget = FTransform(CrouchRotation, CrouchCameraLocation);
+			LerpToNewTransform(false, TargetTransform, CrouchOverrideDistance, 0.1f, DeltaTime);
+		}
+		return;
+	}
+
+	FVector NewCrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
+	SetActorLocation(NewCrouchCameraLocation);
 
 	FVector CameraLocation = GetActorLocation();
 	FVector PlayerLocation = Player->GetActorLocation();
@@ -184,11 +230,7 @@ void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVec
 	LookDirection.Normalize();
 	FRotator CrouchRotation = LookDirection.Rotation();
 
-	//SetActorRotation(CrouchRotation);
-
-	FTransform CrouchTarget = FTransform(CrouchRotation, CrouchCameraLocation);
-
-	LerpToNewTransform(CrouchTarget, DeltaTime);
+	SetActorRotation(CrouchRotation);
 		
 	return;
 }

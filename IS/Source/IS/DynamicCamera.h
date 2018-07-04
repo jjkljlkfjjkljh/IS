@@ -34,7 +34,7 @@ public:
 
 private:
 
-	void LerpToNewTransform(FTransform Target, float DeltaTime);
+	void LerpToNewTransform(bool RotationMatters, FTransform Target, float AlphaOverrideDistance, float TimeScale, float DeltaTime);
 
 	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition);
 
@@ -48,6 +48,7 @@ private:
 	bool bJustLanded = false;
 	bool bJumpStartLocationSet = false;
 	bool bCrouchStartLocationSet = false;
+	bool bFinishedCrouchTransition = false;
 
 	FTransform CurrentTransform;
 	FVector JumpStartLocation;
@@ -55,7 +56,8 @@ private:
 
 	float AlphaMultiplier = 0.3f;
 	float Alpha = 0.0f;
-	float AlphaOverrideDistance = 15.0f;
+	float MainOverrideDistance = 15.0f;
+	float CrouchOverrideDistance = 1.0f;
 
 	float ClosestDistanceAllowed = 200.0f;
 	float MaxHeightAbovePlayer = 120.0f;
