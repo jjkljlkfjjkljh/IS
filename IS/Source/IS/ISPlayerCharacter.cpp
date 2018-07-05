@@ -204,14 +204,14 @@ void AISPlayerCharacter::StopSprint()
 
 void AISPlayerCharacter::StartCrouch()
 {
-	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f)); //TODO figure out why this isn't actually scaling
+	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f));
 	Crouch();
 	return;
 }
 
 void AISPlayerCharacter::StopCrouch()
 {
-	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f)); //TODO figure out why this isn't actually scaling
+	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 	UnCrouch();
 	return;
 }
@@ -275,13 +275,14 @@ void AISPlayerCharacter::Turn(float InputAmount)
 void AISPlayerCharacter::SetupComponents()
 {
 	//TODO Clean up commented out lines
-	//FirstPersonCamera->SetActive(false);
 	//FirstPersonCamera->bUsePawnControlRotation = true;
-	//ThirdPersonCamera->SetActive(true);
 	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	FirstPersonCameraLocation = FindComponentByClass<UFirstPersonCameraLocation>();
 	ThirdPersonCameraLocation = FindComponentByClass<UThirdPersonCameraLocation>();
+
+	///Set up capsule component height
+	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
 	return;
 }
 

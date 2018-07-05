@@ -45,10 +45,6 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	{
 		JumpStartLocation = GetActorLocation();
 	}
-	if (!bCrouchStartLocationSet)
-	{
-		CrouchStartLocation = GetActorLocation();
-	}
 
 	//jump to the correct position if in a transition from one location to another
 	if (bWasFirstPerson || bTransitioning)
@@ -93,13 +89,11 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	}
 	if (bIsCrouching)
 	{
-		bCrouchStartLocationSet = true;
 		CameraPositionDuringCrouch(TargetTransform, PlayerPosition, DeltaTime);
 		return;
 	}
 	else
 	{
-		bCrouchStartLocationSet = false;
 		bFinishedCrouchTransition = false;
 	}
 
@@ -197,40 +191,6 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 
 void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
 {
-	if (!bFinishedCrouchTransition)
-	{
-		FVector CrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
-		float DistanceToTarget = (GetActorLocation() - CrouchCameraLocation).Size();
-		if (TransformCheck::RotationIsWithinLimit(GetActorRotation(), TargetTransform.Rotator(), 0.5f))
-		{
-			bFinishedCrouchTransition = true;
-		}
-		else
-		{
-			/* Uncomment to set a custom look rotation for camera when crouching
-			FVector CameraLocation = GetActorLocation();
-			FVector PlayerLocation = Player->GetActorLocation();
-			FVector LookDirection = PlayerLocation - CameraLocation;
-			LookDirection.Normalize();
-			FRotator CrouchRotation = LookDirection.Rotation();
-			*/
 
-			//FTransform CrouchTarget = FTransform(CrouchRotation, CrouchCameraLocation);
-			LerpToNewTransform(false, TargetTransform, CrouchOverrideDistance, 0.1f, DeltaTime);
-		}
-		return;
-	}
-
-	FVector NewCrouchCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
-	SetActorLocation(NewCrouchCameraLocation);
-
-	FVector CameraLocation = GetActorLocation();
-	FVector PlayerLocation = Player->GetActorLocation();
-	FVector LookDirection = PlayerLocation - CameraLocation;
-	LookDirection.Normalize();
-	FRotator CrouchRotation = LookDirection.Rotation();
-
-	SetActorRotation(CrouchRotation);
-		
 	return;
 }

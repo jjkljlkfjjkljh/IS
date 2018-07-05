@@ -81,6 +81,14 @@ private:
 	float BaseTurnRate;
 	float BaseLookUpRate;
 
+	//Capsule half-height when standing
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float ColliderStandingHeight = 50.f;
+
+	//Capsule half-height when crouching
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float ColliderCrouchingHeight = 25.f;
+
 	//speed when not sprinting
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float WalkSpeed = 250.f;

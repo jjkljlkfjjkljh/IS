@@ -18,5 +18,6 @@ public:
 	*/
 	static bool RotationIsWithinLimit(FRotator Rotation1, FRotator Rotation2, float MarginOfError);
 
+	//TODO finish method
 	static bool LocationIsWithinLimit(FVector Location1, FVector Location2, float MarginOferror);
 };

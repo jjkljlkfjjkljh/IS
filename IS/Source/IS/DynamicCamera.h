@@ -47,7 +47,6 @@ private:
 	bool bInAir = false;
 	bool bJustLanded = false;
 	bool bJumpStartLocationSet = false;
-	bool bCrouchStartLocationSet = false;
 	bool bFinishedCrouchTransition = false;
 
 	FTransform CurrentTransform;
