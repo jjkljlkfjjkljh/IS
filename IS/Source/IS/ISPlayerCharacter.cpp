@@ -204,16 +204,23 @@ void AISPlayerCharacter::StopSprint()
 
 void AISPlayerCharacter::StartCrouch()
 {
+	DynamicCamera->bIsCrouched = true;
+	Crouch();
+	/*
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f));
 	Crouch();
 	return;
+	*/
 }
 
 void AISPlayerCharacter::StopCrouch()
 {
+	DynamicCamera->bIsCrouched = false;
+	/*
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 	UnCrouch();
 	return;
+	*/
 }
 
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple

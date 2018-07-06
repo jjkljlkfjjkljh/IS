@@ -22,13 +22,13 @@ protected:
 
 public:
 
-	bool bIsFirstPerson = false;
-
-	bool bIsPlayerControlled = true;
-
 	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
 
 	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime);
+
+	bool bIsFirstPerson = false;
+	bool bIsPlayerControlled = true;
+	bool bIsCrouched = false;
 
 	AISPlayerCharacter* Player = nullptr;
 
