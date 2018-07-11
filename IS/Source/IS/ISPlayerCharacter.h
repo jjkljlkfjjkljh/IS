@@ -78,8 +78,19 @@ private:
 	UFirstPersonCameraLocation* FirstPersonCameraLocation = nullptr;
 	UThirdPersonCameraLocation* ThirdPersonCameraLocation = nullptr;
 
+	bool bSprinting = false;
+
+	float SprintAlpha = 0.f;
+	float CurrentSprintSpeed;
+
+	float TurnAlpha = 0.f;
+	float CurrentTurnSpeed;
+
 	float BaseTurnRate;
 	float BaseLookUpRate;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float MaxTurnRate = 50.f;
 
 	//Capsule half-height when standing
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -87,7 +98,7 @@ private:
 
 	//Capsule half-height when crouching
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float ColliderCrouchingHeight = 40.f;
+	float ColliderCrouchingHeight = 60.f;
 
 	//speed when not sprinting
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -97,9 +108,15 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float SprintSpeed = 550.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float SprintRampUpMultiplier = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float CrouchSpeed = 150.f;
+
 	//force applied for jumps
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float JumpVelocity = 400.f;
+	float JumpVelocity = 450.f;
 
 	//percentage of max walk speed allowed to move while in air
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -107,7 +124,7 @@ private:
 
 	//Wether or not the player can control if the camera is first or third person
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	bool bPlayerControlsCameraPerspective = true;
+	bool bPlayerControlsCameraPerspective = false;
 
 	//How far ahead of the player can we reach in cm
 	float Reach = 200.f;

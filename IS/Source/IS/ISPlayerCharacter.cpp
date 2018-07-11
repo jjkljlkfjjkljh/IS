@@ -85,6 +85,23 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 			bIsPlayerCrouched,
 			DeltaTime);
 	}
+
+	if (bSprinting)
+	{
+		SprintAlpha = (SprintAlpha + DeltaTime);
+		CurrentSprintSpeed = (GetCharacterMovement()->MaxWalkSpeed + (SprintAlpha * SprintRampUpMultiplier * SprintSpeed));
+
+		if (CurrentSprintSpeed >= SprintSpeed)
+		{
+			PRINT_GREEN("MAXSPEED");
+			GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+		}
+		else
+		{
+			PRINT_RED("Sprinting");
+			GetCharacterMovement()->MaxWalkSpeed = CurrentSprintSpeed;
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -101,10 +118,10 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AISPlayerCharacter::StartSprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AISPlayerCharacter::StopSprint);
+	//PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AISPlayerCharacter::StopSprint);
 
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AISPlayerCharacter::StartCrouch);
-	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AISPlayerCharacter::StopCrouch);
+	//PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AISPlayerCharacter::StopCrouch);
 
 	///InputAxis bindings
 	PlayerInputComponent->BindAxis("MoveForward", this, &AISPlayerCharacter::MoveForward);
@@ -166,39 +183,61 @@ void AISPlayerCharacter::Interact()
 
 void AISPlayerCharacter::StartSprint()
 {
-	//TODO adjust movement speed to be at max
-	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	return;
+	if (!bSprinting)
+	{
+		if (bIsPlayerCrouched)
+		{
+			return;
+		}
+		bSprinting = true;
+		return;
+	}
+	else
+	{
+		bSprinting = false;
+		SprintAlpha = 0.f;
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		return;
+	}
 }
 
 void AISPlayerCharacter::StopSprint()
 {
-	//TODO adjust movement speed to be at min
+	bSprinting = false;
+	SprintAlpha = 0.f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	return;
 }
 
 void AISPlayerCharacter::StartCrouch()
 {
-	bIsPlayerCrouched = true;
-	CapsuleComponent->SetCapsuleHalfHeight(ColliderCrouchingHeight);
-	//Crouch();
-	/*
-	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f));
-	Crouch();
-	return;
-	*/
+	if (!bIsPlayerCrouched)
+	{
+		if (bSprinting)
+		{
+			bSprinting = false;
+			SprintAlpha = 0.f;
+		}
+		GetCharacterMovement()->MaxWalkSpeed = CrouchSpeed;
+		bIsPlayerCrouched = true;
+		CapsuleComponent->SetCapsuleHalfHeight(ColliderCrouchingHeight);
+		return;
+	}
+	else
+	{
+		bIsPlayerCrouched = false;
+		CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		return;
+	}
 }
 
 void AISPlayerCharacter::StopCrouch()
 {
 	bIsPlayerCrouched = false;
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
-	/*
-	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-	UnCrouch();
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	return;
-	*/
 }
 
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
