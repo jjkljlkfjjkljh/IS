@@ -23,7 +23,7 @@ void ADynamicCamera::BeginPlay()
 }
 
 //Set the camera to amtch the first person location on the player character
-void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime)
+void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, FVector ForwardVector, float DeltaTime)
 {
 	//jump to the correct position if in a transition from one location to another
 	if (!bWasFirstPerson || bTransitioning)
@@ -36,6 +36,7 @@ void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, float De
 
 	//if none of the above conditions need met then set the default first person location
 	SetActorTransform(TargetTransform);
+
 	return;
 }
 //Set the camera to match the third person location on the player character

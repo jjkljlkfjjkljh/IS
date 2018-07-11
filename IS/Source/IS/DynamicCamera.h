@@ -22,7 +22,7 @@ protected:
 
 public:
 
-	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
+	void SetFirstPersonLocation(FTransform TargetTransform, FVector ForwardVector, float DeltaTime);
 
 	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime);
 

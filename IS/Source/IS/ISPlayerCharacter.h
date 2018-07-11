@@ -80,17 +80,31 @@ private:
 
 	bool bSprinting = false;
 
+	float GlobalDeltaTime = 0.f;
 	float SprintAlpha = 0.f;
 	float CurrentSprintSpeed;
 
-	float TurnAlpha = 0.f;
-	float CurrentTurnSpeed;
+	float CurrentTurnInput;
+	float CurrentLookInput;
+	float CurrentForwardInput;
+	float CurrentRightInput;
 
-	float BaseTurnRate;
-	float BaseLookUpRate;
+	float FirstPersonLookUpOffset = 0.f;
+	float MaxLookAmount = 50.f;
+
+	float TurnAlpha = 0.f;
+	float CurrentTurnSpeed = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float MaxTurnRate = 50.f;
+	float BaseTurnRate = 45.f;
+
+	float BaseLookUpRate = 45.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float MaxTurnRate = 90.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float TurnRampOverTime = 0.3f;
 
 	//Capsule half-height when standing
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -109,7 +123,7 @@ private:
 	float SprintSpeed = 550.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float SprintRampUpMultiplier = 0.3f;
+	float SprintRampUpMultiplier = 0.01f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float CrouchSpeed = 150.f;

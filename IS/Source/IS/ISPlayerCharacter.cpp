@@ -15,15 +15,15 @@
 #include "ViewRotator.h"
 #include "Door.h"
 #include "Camera/CameraActor.h"
+#include "ISPlayerController.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 #define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
-#define PRINT_GREEN(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT(x));}
-#define PRINT_RED(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT(x));}
+#define PRINT_GREEN(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, TEXT(x));}
+#define PRINT_RED(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Red, TEXT(x));}
 
 #define WARNING(x) UE_LOG(LogTemp, Warning, TEXT(x));
 #define ERROR(x) UE_LOG(LogTemp, Error, TEXT(x));
-//if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
 
 // Sets default values
 AISPlayerCharacter::AISPlayerCharacter()
@@ -33,12 +33,6 @@ AISPlayerCharacter::AISPlayerCharacter()
 
 	/// make sure the pawn is set up to be controlled
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
-
-	/// set turn rates for look around input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
-
-	
 
 	///Set up character movement component with default values
 	GetCharacterMovement()->bOrientRotationToMovement = true; //Move character in direction of input
@@ -70,16 +64,22 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	GlobalDeltaTime = DeltaTime;
+
 	if (DynamicCamera->bIsFirstPerson)
 	{
-		FTransform FirstPersonLocation = FirstPersonCameraLocation->GetComponentTransform();
-		DynamicCamera->SetFirstPersonLocation(FirstPersonLocation, DeltaTime);
+		FTransform FirstPersonTransform = FirstPersonCameraLocation->GetComponentTransform();
+		FirstPersonTransform.SetRotation(GetActorForwardVector().ToOrientationQuat());
+		FRotator FirstPersonRotation = FirstPersonTransform.Rotator();
+		FirstPersonRotation.Pitch += FirstPersonLookUpOffset;
+		FirstPersonTransform.SetRotation(FirstPersonRotation.Quaternion());
+		DynamicCamera->SetFirstPersonLocation(FirstPersonTransform, GetActorForwardVector(), DeltaTime);
 	}
 	else
 	{
-		FTransform ThirdPersonLocation = ThirdPersonCameraLocation->GetComponentTransform();
+		FTransform ThirdPersonTransform = ThirdPersonCameraLocation->GetComponentTransform();
 		DynamicCamera->SetThirdPersonLocation(
-			ThirdPersonLocation, 
+			ThirdPersonTransform,
 			GetActorLocation(), 
 			GetCharacterMovement()->IsFalling(), 
 			bIsPlayerCrouched,
@@ -88,17 +88,15 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 
 	if (bSprinting)
 	{
-		SprintAlpha = (SprintAlpha + DeltaTime);
+		SprintAlpha += DeltaTime;
 		CurrentSprintSpeed = (GetCharacterMovement()->MaxWalkSpeed + (SprintAlpha * SprintRampUpMultiplier * SprintSpeed));
 
 		if (CurrentSprintSpeed >= SprintSpeed)
 		{
-			PRINT_GREEN("MAXSPEED");
 			GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 		}
 		else
 		{
-			PRINT_RED("Sprinting");
 			GetCharacterMovement()->MaxWalkSpeed = CurrentSprintSpeed;
 		}
 	}
@@ -135,10 +133,10 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 {
 	if (bPlayerControlsCameraPerspective)
 	{
-		//TODO add back camera switch functionality
 		if (DynamicCamera->bIsFirstPerson)
 		{
 			DynamicCamera->bIsFirstPerson = false;
+			FirstPersonLookUpOffset = 0.f;
 		}
 		else
 		{
@@ -156,6 +154,7 @@ void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 		if (DynamicCamera->bIsFirstPerson)
 		{
 			DynamicCamera->bIsFirstPerson = false;
+			FirstPersonLookUpOffset = 0.f;
 		}
 		else
 		{
@@ -243,6 +242,15 @@ void AISPlayerCharacter::StopCrouch()
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
 void AISPlayerCharacter::MoveForward(float InputAmount)
 {
+	CurrentForwardInput = InputAmount;
+	if ((InputAmount <= 0.01f) && (InputAmount >= -0.01f))
+	{
+		if ((CurrentRightInput <= 0.01f) && (CurrentRightInput >= -0.01f))
+		{
+			SprintAlpha = 0.f;
+			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		}
+	}
 	if ((Controller != NULL) && InputAmount != 0.f)
 	{
 		//figure out which direction is forward
@@ -261,6 +269,15 @@ void AISPlayerCharacter::MoveForward(float InputAmount)
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
 void AISPlayerCharacter::MoveRight(float InputAmount)
 {
+	CurrentRightInput = InputAmount;
+	if ((InputAmount <= 0.01f) && (InputAmount >= -0.01f))
+	{
+		if ((CurrentForwardInput <= 0.01f) && (CurrentForwardInput >= -0.01f))
+		{
+			SprintAlpha = 0.f;
+			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		}
+	}
 	if ((Controller != NULL) && InputAmount != 0.f)
 	{
 		//figure out which direction is forward
@@ -279,21 +296,66 @@ void AISPlayerCharacter::MoveRight(float InputAmount)
 //TODO Clamp the look height and fix the player looking up and down in first person
 void AISPlayerCharacter::LookUp(float InputAmount)
 {
-	if (DynamicCamera->bIsFirstPerson)
+	CurrentLookInput = InputAmount;
+	if ((InputAmount >= 0.01f) || (InputAmount <= -0.01f))
 	{
-		AddControllerPitchInput(InputAmount * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+		if (CurrentTurnSpeed <= MaxTurnRate)
+		{
+			TurnAlpha = (GlobalDeltaTime * TurnRampOverTime);
+			CurrentTurnSpeed += (TurnAlpha * MaxTurnRate);
+			if (DynamicCamera->bIsFirstPerson)
+			{
+				FirstPersonLookUpOffset += -(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds());
+				//AddControllerPitchInput(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds());
+			}
+			else
+			{
+				SpringArm->AddLocalRotation(FRotator(-(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds()), 0.f, 0.f));
+			}
+			return;
+		}
+		else
+		{
+			if (DynamicCamera->bIsFirstPerson)
+			{
+				FirstPersonLookUpOffset += -(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds());
+				//AddControllerPitchInput(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds());
+			}
+			else
+			{
+				SpringArm->AddLocalRotation(FRotator(-(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds()), 0.f, 0.f));
+			}
+			return;
+		}
 	}
-	else
+	else if ((CurrentTurnInput <= 0.01f) && (CurrentTurnInput >= -0.01))
 	{
-		SpringArm->AddLocalRotation(FRotator(-InputAmount, 0.f, 0.f));
+		CurrentTurnSpeed = BaseTurnRate;
 	}
 	return;
 }
 
 void AISPlayerCharacter::Turn(float InputAmount)
 {
-	AddControllerYawInput(InputAmount * BaseTurnRate * GetWorld()->GetDeltaSeconds());
-	return;
+	CurrentTurnInput = InputAmount;
+	if ((InputAmount >= 0.01f) || (InputAmount <= -0.01f))
+	{
+		if (CurrentTurnSpeed <= MaxTurnRate)
+		{
+			TurnAlpha = (GlobalDeltaTime * TurnRampOverTime);
+			CurrentTurnSpeed += (TurnAlpha * MaxTurnRate);
+			AddControllerYawInput(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds());
+		}
+		else
+		{
+			AddControllerYawInput(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds());
+			return;
+		}
+	}
+	else if((CurrentLookInput <= 0.01f) && (CurrentLookInput >= -0.01f))
+	{
+		CurrentTurnSpeed = BaseTurnRate;
+	}
 }
 
 void AISPlayerCharacter::SetupComponents()
