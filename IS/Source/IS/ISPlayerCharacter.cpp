@@ -82,32 +82,8 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 			ThirdPersonLocation, 
 			GetActorLocation(), 
 			GetCharacterMovement()->IsFalling(), 
-			bIsCrouched,
+			bIsPlayerCrouched,
 			DeltaTime);
-	}
-
-	if (bShowDebugLine)
-	{
-		FVector PlayerViewPointLocation;
-		FRotator PlayerViewPointRotation;
-
-		GetActorEyesViewPoint(
-			PlayerViewPointLocation,
-			PlayerViewPointRotation
-		);
-
-		FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
-
-		DrawDebugLine(
-			GetWorld(),
-			PlayerViewPointLocation,
-			LineTraceEnd,
-			FColor(255, 0, 0),
-			false,
-			0.f,
-			0.f,
-			10.f
-		);
 	}
 }
 
@@ -204,8 +180,9 @@ void AISPlayerCharacter::StopSprint()
 
 void AISPlayerCharacter::StartCrouch()
 {
-	DynamicCamera->bIsCrouched = true;
-	Crouch();
+	bIsPlayerCrouched = true;
+	CapsuleComponent->SetCapsuleHalfHeight(ColliderCrouchingHeight);
+	//Crouch();
 	/*
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 0.5f));
 	Crouch();
@@ -215,7 +192,8 @@ void AISPlayerCharacter::StartCrouch()
 
 void AISPlayerCharacter::StopCrouch()
 {
-	DynamicCamera->bIsCrouched = false;
+	bIsPlayerCrouched = false;
+	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
 	/*
 	MeshComponent->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 	UnCrouch();

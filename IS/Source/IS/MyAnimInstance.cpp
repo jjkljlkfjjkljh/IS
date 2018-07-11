@@ -1,15 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "GameFramework/CharacterMovementComponent.h"
 #include "MyAnimInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "ISPlayerCharacter.h"
 
 void UMyAnimInstance::UpdateAnimationProperties()
 {
-	APawn* Pawn = TryGetPawnOwner();
+	
+	Player = Cast<AISPlayerCharacter>(TryGetPawnOwner());
 
-	if (Pawn)
+	if (Player)
 	{
-		bIsFalling = Pawn->GetMovementComponent()->IsFalling();
-		MovementSpeed = Pawn->GetVelocity().Size();
+		bIsFalling = Player->GetMovementComponent()->IsFalling();
+		MovementSpeed = Player->GetVelocity().Size();
+		bIsCrouching = Player->bIsPlayerCrouched;
 	}
 }

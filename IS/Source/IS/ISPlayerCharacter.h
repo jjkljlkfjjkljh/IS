@@ -47,8 +47,12 @@ public:
 	//Spawns dynamic camera
 	ADynamicCamera* SpawnAndSetCamera();
 
-	//Mkaes sure the game starts off with the correct camera settings
+	//Makes sure the game starts off with the correct camera settings
 	void SetupComponents();
+
+	ADynamicCamera* DynamicCamera = nullptr;
+
+	bool bIsPlayerCrouched = false;
 
 private:
 
@@ -71,23 +75,19 @@ private:
 
 	UCapsuleComponent* CapsuleComponent = nullptr;
 
-	ADynamicCamera* DynamicCamera = nullptr;
-
 	UFirstPersonCameraLocation* FirstPersonCameraLocation = nullptr;
 	UThirdPersonCameraLocation* ThirdPersonCameraLocation = nullptr;
-
-
 
 	float BaseTurnRate;
 	float BaseLookUpRate;
 
 	//Capsule half-height when standing
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float ColliderStandingHeight = 50.f;
+	float ColliderStandingHeight = 88.f;
 
 	//Capsule half-height when crouching
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float ColliderCrouchingHeight = 25.f;
+	float ColliderCrouchingHeight = 40.f;
 
 	//speed when not sprinting
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
@@ -104,10 +104,6 @@ private:
 	//percentage of max walk speed allowed to move while in air
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float AirControl = 0.3;
-
-	//Wether or not to display the interact debug line
-	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	bool bShowDebugLine = false;
 
 	//Wether or not the player can control if the camera is first or third person
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)

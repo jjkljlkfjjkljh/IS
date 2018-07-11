@@ -28,7 +28,6 @@ public:
 
 	bool bIsFirstPerson = false;
 	bool bIsPlayerControlled = true;
-	bool bIsCrouched = false;
 
 	AISPlayerCharacter* Player = nullptr;
 
@@ -48,10 +47,13 @@ private:
 	bool bJustLanded = false;
 	bool bJumpStartLocationSet = false;
 	bool bFinishedCrouchTransition = false;
+	bool bCrouchStartLocationSet = false;
+	bool bOriginalTargetHeightSet = false;
 
 	FTransform CurrentTransform;
 	FVector JumpStartLocation;
 	FVector CrouchStartLocation;
+	FVector OriginalTargetLocation;
 
 	float AlphaMultiplier = 0.3f;
 	float Alpha = 0.0f;

@@ -2,6 +2,7 @@
 #include "FirstPersonCameraLocation.h"
 #include "ThirdPersonCameraLocation.h"
 #include "ISPlayerCharacter.h"
+#include "ViewRotator.h"
 #include "TransformCheck.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
@@ -76,7 +77,6 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		if (bInAir)
 		{
 			bJustLanded = true;
-			bFinishedCrouchTransition = false;
 			bInAir = false;
 		}
 	}
@@ -87,14 +87,34 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
 		return;
 	}
+
+	//Change camera to follow crouching behavior
 	if (bIsCrouching)
 	{
+		bOriginalTargetHeightSet = true;
+		bCrouchStartLocationSet = true;
 		CameraPositionDuringCrouch(TargetTransform, PlayerPosition, DeltaTime);
+		bFinishedCrouchTransition = false;
 		return;
 	}
 	else
 	{
-		bFinishedCrouchTransition = false;
+		bOriginalTargetHeightSet = false;
+		bCrouchStartLocationSet = false;
+		if (!bFinishedCrouchTransition)
+		{
+			LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
+			return;
+		}
+	}
+
+	if (!bCrouchStartLocationSet)
+	{
+		CrouchStartLocation = GetActorLocation();
+	}
+	if (!bOriginalTargetHeightSet)
+	{
+		OriginalTargetLocation = Player->FindComponentByClass<UViewRotator>()->GetComponentLocation();
 	}
 
 	//if none of the above conditions need met then set the default third person location
@@ -107,39 +127,23 @@ void ADynamicCamera::LerpToNewTransform(bool RotationMatters, FTransform Target,
 {
 	Alpha += (DeltaTime * AlphaMultiplier * TimeScale);
 
-	PRINT_GREEN("LERP");
-
 	//check if the target location is reached or if it is close enough to set the true location
 	//TODO fix the sudden jerkiness of the override distance
 	if ((Alpha >= 1.0f) || ((this->GetActorLocation() - Target.GetLocation()).Size() < AlphaOverrideDistance ))
 	{
-		if (RotationMatters)
+		//set the exact transform of the target and reset lerp values
+		SetActorTransform(Target);
+		bTransitioning = false;
+		Alpha = 0.0f;
+		if (bJustLanded)
 		{
-			if (TransformCheck::RotationIsWithinLimit(GetActorRotation(), Target.Rotator(), 0.5f))
-			{
-				//set the exact transform of the target and reset lerp values
-				SetActorTransform(Target);
-				bTransitioning = false;
-				Alpha = 0.0f;
-				if (bJustLanded)
-				{
-					bJustLanded = false;
-				}
-				return;
-			}
+			bJustLanded = false;
 		}
-		else
+		if (!bFinishedCrouchTransition)
 		{
-			//set the exact transform of the target and reset lerp values
-			SetActorTransform(Target);
-			bTransitioning = false;
-			Alpha = 0.0f;
-			if (bJustLanded)
-			{
-				bJustLanded = false;
-			}
-			return;
+			bFinishedCrouchTransition = true;
 		}
+		return;
 	}
 	
 	//Lerp between the current position and the target 
@@ -182,7 +186,7 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 
 	///get the look direction from the camera to the player and set the correct rotation
 	FVector CameraLocation = GetActorLocation();
-	FVector PlayerLocation = Player->GetActorLocation();
+	FVector PlayerLocation = Player->FindComponentByClass<UViewRotator>()->GetComponentLocation();
 	FVector LookDirection = PlayerLocation - CameraLocation;
 	LookDirection.Normalize();
 	SetActorRotation(LookDirection.Rotation());
@@ -191,6 +195,17 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 
 void ADynamicCamera::CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime)
 {
+	///Set the location of the camera to match the height of the start of the crouch but the player controlled position
+	FVector NewCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, CrouchStartLocation.Z);
+	SetActorLocation(NewCameraLocation);
 
+	///get the look direction from the camera to the player and set the correct rotation
+	FVector CameraLocation = GetActorLocation();
+	FVector PlayerLocation = FVector(Player->FindComponentByClass<UViewRotator>()->GetComponentLocation().X,
+		Player->FindComponentByClass<UViewRotator>()->GetComponentLocation().Y,
+		OriginalTargetLocation.Z);
+	FVector LookDirection = PlayerLocation - CameraLocation;
+	LookDirection.Normalize();
+	SetActorRotation(LookDirection.Rotation());
 	return;
 }

@@ -6,6 +6,9 @@
 #include "Animation/AnimInstance.h"
 #include "MyAnimInstance.generated.h"
 
+///Forward Declaratioons
+class AISPlayerCharacter;
+
 /**
  * 
  */
@@ -15,14 +18,20 @@ class IS_API UMyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(EditAnywhere, BLueprintReadOnly)
-		bool bIsFalling;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsFalling;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		float MovementSpeed;
+	bool bIsCrouching;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MovementSpeed;
 
 	UFUNCTION(BlueprintCallable, Category = "UpdateAnimationProperties")
-		void UpdateAnimationProperties();
+	void UpdateAnimationProperties();
+
+private:
+	AISPlayerCharacter* Player = nullptr;
 	
 	
 };
