@@ -17,5 +17,13 @@ class IS_API AISPlayerController : public APlayerController
 public:
 	AISPlayerController();
 	
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> wPauseMenu;
+
+	UUserWidget* PauseMenu;
+	UUserWidget* SettingsMenu;
+
+	virtual void BeginPlay() override;
+
+	void ShowPauseMenu(bool bDisplayMenu);
 };

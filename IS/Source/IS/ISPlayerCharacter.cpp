@@ -14,8 +14,11 @@
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
 #include "Door.h"
+#include "ISPlayerController.h"
 #include "Camera/CameraActor.h"
 #include "ISPlayerController.h"
+#include "PauseMenu.h"
+#include "Blueprint/UserWidget.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 #define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
@@ -30,6 +33,7 @@ AISPlayerCharacter::AISPlayerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bTickEvenWhenPaused = true;
 
 	/// make sure the pawn is set up to be controlled
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -120,6 +124,8 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AISPlayerCharacter::StartCrouch);
 	//PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AISPlayerCharacter::StopCrouch);
+
+	PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AISPlayerCharacter::Pause);
 
 	///InputAxis bindings
 	PlayerInputComponent->BindAxis("MoveForward", this, &AISPlayerCharacter::MoveForward);
@@ -358,6 +364,24 @@ void AISPlayerCharacter::Turn(float InputAmount)
 	}
 }
 
+void AISPlayerCharacter::Pause()
+{
+	PRINT_GREEN("Pause");
+	switch (bIsGamePaused)
+	{
+		//unpause
+	case true:
+		bIsGamePaused = !bIsGamePaused;
+		PlayerController->ShowPauseMenu(false);
+		break;
+		//pause
+	case false:
+		bIsGamePaused = !bIsGamePaused;
+		PlayerController->ShowPauseMenu(true);
+		break;
+	}
+}
+
 void AISPlayerCharacter::SetupComponents()
 {
 	//TODO Clean up commented out lines
@@ -366,6 +390,7 @@ void AISPlayerCharacter::SetupComponents()
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	FirstPersonCameraLocation = FindComponentByClass<UFirstPersonCameraLocation>();
 	ThirdPersonCameraLocation = FindComponentByClass<UThirdPersonCameraLocation>();
+	PlayerController = Cast<AISPlayerController>(GetController());
 
 	///Set up capsule component height
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);

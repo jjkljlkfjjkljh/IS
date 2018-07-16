@@ -10,6 +10,8 @@ class UThirdPersonCameraLocation;
 class UViewRotator;
 class UCapsuleComponent;
 class ADynamicCamera;
+class UPauseMenu;
+class AISPlayerController;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -44,6 +46,10 @@ public:
 	void LookUp(float InputAmount);
 	void Turn(float InputAmount);
 
+	//Function the pause widget can call to clear the pause screen UI and set variables correctly
+	UFUNCTION(BlueprintCallable, Category = "CustomUI")
+	void Pause();
+
 	//Spawns dynamic camera
 	ADynamicCamera* SpawnAndSetCamera();
 
@@ -52,6 +58,10 @@ public:
 
 	ADynamicCamera* DynamicCamera = nullptr;
 
+	AISPlayerController* PlayerController = nullptr;
+
+	bool bIsGamePaused = false;
+
 	bool bIsPlayerCrouched = false;
 
 private:
@@ -59,11 +69,11 @@ private:
 	FHitResult GetFirstWorldDynamicInReach();
 
 	UFUNCTION()
-		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// declare overlap end function
 	UFUNCTION()
-		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	//UCharacterMovementComponent* MovementComponent = nullptr;
 
@@ -77,6 +87,8 @@ private:
 
 	UFirstPersonCameraLocation* FirstPersonCameraLocation = nullptr;
 	UThirdPersonCameraLocation* ThirdPersonCameraLocation = nullptr;
+
+	UPauseMenu* PauseMenu = nullptr;
 
 	bool bSprinting = false;
 
