@@ -252,6 +252,8 @@ void AISPlayerCharacter::StopCrouch()
 //Mostly Follows the Unreal Third person example project's implementation to keep things simple
 void AISPlayerCharacter::MoveForward(float InputAmount)
 {
+	float MovementSpeed = GetVelocity().Size();
+	UE_LOG(LogTemp, Warning, TEXT("Speed is: %f"), MovementSpeed);
 	CurrentForwardInput = InputAmount;
 	if ((InputAmount <= 0.01f) && (InputAmount >= -0.01f))
 	{

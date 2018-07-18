@@ -22,6 +22,12 @@ protected:
 	bool bIsFalling;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsWalking;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsRunning;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsCrouching;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
