@@ -148,10 +148,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float AirControl = 0.3;
 
-	//Wether or not the player can control if the camera is first or third person
-	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	bool bPlayerControlsCameraPerspective = false;
-
 	//How far ahead of the player can we reach in cm
 	float Reach = 200.f;
 

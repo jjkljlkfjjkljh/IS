@@ -120,10 +120,10 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AISPlayerCharacter::StartSprint);
-	//PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AISPlayerCharacter::StopSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AISPlayerCharacter::StopSprint);
 
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AISPlayerCharacter::StartCrouch);
-	//PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AISPlayerCharacter::StopCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AISPlayerCharacter::StopCrouch);
 
 	PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AISPlayerCharacter::Pause);
 
@@ -137,7 +137,7 @@ void AISPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void AISPlayerCharacter::PlayerSwitchCamera()
 {
-	if (bPlayerControlsCameraPerspective)
+	if (PlayerController->LoadedData.bSettingsPlayerControlledCamera)
 	{
 		if (DynamicCamera->bIsFirstPerson)
 		{
@@ -155,7 +155,7 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 //If set to true the camera will be first person
 void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 {
-	if (!bPlayerControlsCameraPerspective)
+	if (!PlayerController->LoadedData.bSettingsPlayerControlledCamera)
 	{
 		if (DynamicCamera->bIsFirstPerson)
 		{
@@ -208,6 +208,8 @@ void AISPlayerCharacter::StartSprint()
 
 void AISPlayerCharacter::StopSprint()
 {
+	//check if toggle to sprint is set and return without stopping sprint if it is
+	if (PlayerController->LoadedData.bSettingsToggleSprint) { return; }
 	bSprinting = false;
 	SprintAlpha = 0.f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
@@ -239,6 +241,8 @@ void AISPlayerCharacter::StartCrouch()
 
 void AISPlayerCharacter::StopCrouch()
 {
+	//check if toggle to crouch is set and return without stopping crouch if it is
+	if (PlayerController->LoadedData.bSettingsToggleCrouch) { return; }
 	bIsPlayerCrouched = false;
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
