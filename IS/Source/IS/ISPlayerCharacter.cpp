@@ -13,6 +13,7 @@
 #include "ThirdPersonCameraLocation.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Door.h"
 #include "ISPlayerController.h"
 #include "Camera/CameraActor.h"
@@ -75,9 +76,19 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 		FTransform FirstPersonTransform = FirstPersonCameraLocation->GetComponentTransform();
 		FirstPersonTransform.SetRotation(GetActorForwardVector().ToOrientationQuat());
 		FRotator FirstPersonRotation = FirstPersonTransform.Rotator();
+		FString StringCheck = PlayerController->LoadedData.bSettingsFPHeadBob ? "true" : "false";
+		UE_LOG(LogTemp, Warning, TEXT("Var is %s"), *StringCheck);
+		if (!PlayerController->LoadedData.bSettingsFPHeadBob)
+		{
+			FVector FirstPersonLocation = FirstPersonTransform.GetLocation();
+			FirstPersonLocation.X = GetActorLocation().X;
+			FirstPersonLocation.Y = GetActorLocation().Y;
+			FirstPersonLocation.Z = (GetActorLocation().Z + HeadHeight);
+			FirstPersonTransform.SetLocation(FirstPersonLocation);
+		}
 		FirstPersonRotation.Pitch += FirstPersonLookUpOffset;
 		FirstPersonTransform.SetRotation(FirstPersonRotation.Quaternion());
-		DynamicCamera->SetFirstPersonLocation(FirstPersonTransform, GetActorForwardVector(), DeltaTime);
+		DynamicCamera->SetFirstPersonLocation(FirstPersonTransform, DeltaTime);
 	}
 	else
 	{
@@ -253,7 +264,6 @@ void AISPlayerCharacter::StopCrouch()
 void AISPlayerCharacter::MoveForward(float InputAmount)
 {
 	float MovementSpeed = GetVelocity().Size();
-	UE_LOG(LogTemp, Warning, TEXT("Speed is: %f"), MovementSpeed);
 	CurrentForwardInput = InputAmount;
 	if ((InputAmount <= 0.01f) && (InputAmount >= -0.01f))
 	{
@@ -397,6 +407,8 @@ void AISPlayerCharacter::SetupComponents()
 	FirstPersonCameraLocation = FindComponentByClass<UFirstPersonCameraLocation>();
 	ThirdPersonCameraLocation = FindComponentByClass<UThirdPersonCameraLocation>();
 	PlayerController = Cast<AISPlayerController>(GetController());
+	UMeshComponent* PlayerMesh = FindComponentByClass<UMeshComponent>();
+	PlayerMaterialInstance = UMaterialInstanceDynamic::Create(PlayerMesh->GetMaterial(0), this);
 
 	///Set up capsule component height
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);

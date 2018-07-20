@@ -59,6 +59,7 @@ void AISPlayerController::SaveSettings(FLoadedData WidgetLoadedData)
 	SaveGameInstance->bToggleSprint = WidgetLoadedData.bSettingsToggleSprint;
 	SaveGameInstance->AimResponseCurve = WidgetLoadedData.SettingsAimResponseCurve;
 	SaveGameInstance->FieldOfView = WidgetLoadedData.SettingsFieldOfView;
+	SaveGameInstance->bFPHeadBob = WidgetLoadedData.bSettingsFPHeadBob;
 
 	//Save the game instance
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("MainSaveSlot"), 0);
@@ -70,6 +71,7 @@ void AISPlayerController::SaveSettings(FLoadedData WidgetLoadedData)
 	LoadedData.bSettingsToggleSprint = WidgetLoadedData.bSettingsToggleSprint;
 	LoadedData.SettingsAimResponseCurve = WidgetLoadedData.SettingsAimResponseCurve;
 	LoadedData.SettingsFieldOfView = WidgetLoadedData.SettingsFieldOfView;
+	LoadedData.bSettingsFPHeadBob = WidgetLoadedData.bSettingsFPHeadBob;
 
 	UE_LOG(LogTemp, Log, TEXT("Data saved successfully"));
 	return;
@@ -91,6 +93,7 @@ FLoadedData AISPlayerController::LoadSettings()
 		TempLoadedData.bSettingsToggleSprint = false;
 		TempLoadedData.SettingsAimResponseCurve = 0;
 		TempLoadedData.SettingsFieldOfView = 90.f;
+		TempLoadedData.bSettingsFPHeadBob = true;
 
 		LoadedData = TempLoadedData;
 		UE_LOG(LogTemp, Log, TEXT("Data loaded unsuccessfully, save data has been set to defaults"));
@@ -103,6 +106,7 @@ FLoadedData AISPlayerController::LoadSettings()
 	TempLoadedData.bSettingsToggleSprint = SaveGameInstance->bToggleSprint;
 	TempLoadedData.SettingsAimResponseCurve = SaveGameInstance->AimResponseCurve;
 	TempLoadedData.SettingsFieldOfView = SaveGameInstance->FieldOfView;
+	TempLoadedData.bSettingsFPHeadBob = SaveGameInstance->bFPHeadBob;
 
 	LoadedData = TempLoadedData;
 	UE_LOG(LogTemp, Log, TEXT("Data loaded successfully"));
@@ -112,6 +116,40 @@ FLoadedData AISPlayerController::LoadSettings()
 void AISPlayerController::FovChanged(float PercentageFov)
 {
 	PlayerCameraManager->SetFOV(ConvertAlphaToFov(PercentageFov));
+}
+
+void AISPlayerController::ResetSettingsToDefaults()
+{
+	FLoadedData TempLoadedData;
+
+	//Make sure there is save data before trying to load it
+	if (!UGameplayStatics::DoesSaveGameExist("MainSaveSlot", 0))
+	{
+		//pass defaults if no save data
+		TempLoadedData.bSettingsAimAccelerationEnabled = true;
+		TempLoadedData.bSettingsPlayerControlledCamera = false;
+		TempLoadedData.bSettingsToggleCrouch = true;
+		TempLoadedData.bSettingsToggleSprint = false;
+		TempLoadedData.SettingsAimResponseCurve = 0;
+		TempLoadedData.SettingsFieldOfView = 90.f;
+		TempLoadedData.bSettingsFPHeadBob = true;
+
+		LoadedData = TempLoadedData;
+		UE_LOG(LogTemp, Log, TEXT("Data loaded unsuccessfully, save data has been set to defaults"));
+		return;
+	}
+
+	TempLoadedData.bSettingsAimAccelerationEnabled = true;
+	TempLoadedData.bSettingsPlayerControlledCamera = false;
+	TempLoadedData.bSettingsToggleCrouch = true;
+	TempLoadedData.bSettingsToggleSprint = false;
+	TempLoadedData.SettingsAimResponseCurve = 0;
+	TempLoadedData.SettingsFieldOfView = 90.f;
+	TempLoadedData.bSettingsFPHeadBob = true;
+
+	LoadedData = TempLoadedData;
+	UE_LOG(LogTemp, Log, TEXT("Data loaded successfully"));
+	return;
 }
 
 float AISPlayerController::ConvertFovToAlpha(float Fov)

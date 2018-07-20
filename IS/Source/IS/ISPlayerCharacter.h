@@ -12,6 +12,7 @@ class UCapsuleComponent;
 class ADynamicCamera;
 class UPauseMenu;
 class AISPlayerController;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -90,6 +91,8 @@ private:
 
 	UPauseMenu* PauseMenu = nullptr;
 
+	UMaterialInstanceDynamic* PlayerMaterialInstance = nullptr;
+
 	bool bSprinting = false;
 
 	float GlobalDeltaTime = 0.f;
@@ -106,6 +109,9 @@ private:
 
 	float TurnAlpha = 0.f;
 	float CurrentTurnSpeed = 0.f;
+
+	float HeadHeight = 70.f;
+	float ForwardHeadOffset = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float BaseTurnRate = 45.f;

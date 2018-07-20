@@ -34,5 +34,8 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float FieldOfView;
+
+	UPROPERTY(EditAnywhere)
+	bool bFPHeadBob;
 	
 };

@@ -29,6 +29,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "LoadedData")
 	float SettingsFieldOfView;
+
+	UPROPERTY(BlueprintReadWrite, Category = "LoadedData")
+	bool bSettingsFPHeadBob;
 };
 
 /**
@@ -60,6 +63,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void FovChanged(float PercentageFov);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void ResetSettingsToDefaults();
 
 	FLoadedData LoadedData;
 
