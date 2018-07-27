@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "DynamicCamera.h"
 #include "Engine/World.h"
+#include "Containers/Array.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "FirstPersonCameraComponent.h" 
@@ -13,6 +14,7 @@
 #include "ThirdPersonCameraLocation.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "ViewRotator.h"
+#include "Math/UnrealMathVectorCommon.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Door.h"
 #include "ISPlayerController.h"
@@ -23,8 +25,8 @@
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 #define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
-#define PRINT_GREEN(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, TEXT(x));}
-#define PRINT_RED(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Red, TEXT(x));}
+#define PRINT_GREEN(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT(x));}
+#define PRINT_RED(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT(x));}
 
 #define WARNING(x) UE_LOG(LogTemp, Warning, TEXT(x));
 #define ERROR(x) UE_LOG(LogTemp, Error, TEXT(x));
@@ -71,13 +73,40 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 
 	GlobalDeltaTime = DeltaTime;
 
+	if (bIsLerpingToInvisible)
+	{
+		LerpAlpha -= (DeltaTime * LerpModifier);
+		UE_LOG(LogTemp, Warning, TEXT("To Invisible"));
+		UE_LOG(LogTemp, Warning, TEXT("Player Opacity is: %f"), PlayerOpacity);
+		LerpPlayerOpacityInvisible(PlayerOpacity, 0.f, LerpAlpha);
+		if (LerpAlpha <= 0)
+		{
+			LerpAlpha = 0.f;
+			PlayerOpacity = 0.f;
+			PlayerMaterialInstance->SetScalarParameterValue(FName("Opacity"), 0.f);
+			bIsLerpingToInvisible = false;
+		}
+	}
+	if (bIsLerpingToVisible)
+	{
+		LerpAlpha += (DeltaTime * LerpModifier);
+		UE_LOG(LogTemp, Warning, TEXT("To Visible"));
+		UE_LOG(LogTemp, Warning, TEXT("Player Opacity is: %f"), PlayerOpacity);
+		LerpPlayerOpacityVisible(PlayerOpacity, 1.f, LerpAlpha);
+		if (LerpAlpha >= 1)
+		{
+			LerpAlpha = 0.f;
+			PlayerOpacity = 1.f;
+			PlayerMaterialInstance->SetScalarParameterValue(FName("Opacity"), 1.f);
+			bIsLerpingToVisible = false;
+		}
+	}
+
 	if (DynamicCamera->bIsFirstPerson)
 	{
 		FTransform FirstPersonTransform = FirstPersonCameraLocation->GetComponentTransform();
 		FirstPersonTransform.SetRotation(GetActorForwardVector().ToOrientationQuat());
 		FRotator FirstPersonRotation = FirstPersonTransform.Rotator();
-		FString StringCheck = PlayerController->LoadedData.bSettingsFPHeadBob ? "true" : "false";
-		UE_LOG(LogTemp, Warning, TEXT("Var is %s"), *StringCheck);
 		if (!PlayerController->LoadedData.bSettingsFPHeadBob)
 		{
 			FVector FirstPersonLocation = FirstPersonTransform.GetLocation();
@@ -154,10 +183,18 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 		{
 			DynamicCamera->bIsFirstPerson = false;
 			FirstPersonLookUpOffset = 0.f;
+			bIsLerpingToVisible = true;
+			bIsLerpingToInvisible = false;
+			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
+			LerpAlpha = PlayerOpacity;
 		}
 		else
 		{
 			DynamicCamera->bIsFirstPerson = true;
+			bIsLerpingToInvisible = true;
+			bIsLerpingToVisible = false;
+			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
+			LerpAlpha = PlayerOpacity;
 		}
 	}
 	return;
@@ -172,10 +209,18 @@ void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
 		{
 			DynamicCamera->bIsFirstPerson = false;
 			FirstPersonLookUpOffset = 0.f;
+			bIsLerpingToVisible = true;
+			bIsLerpingToInvisible = false;
+			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
+			LerpAlpha = PlayerOpacity;
 		}
 		else
 		{
 			DynamicCamera->bIsFirstPerson = true;
+			bIsLerpingToInvisible = true;
+			bIsLerpingToVisible = false;
+			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
+			LerpAlpha = PlayerOpacity;
 		}
 	}
 	return;
@@ -409,6 +454,8 @@ void AISPlayerCharacter::SetupComponents()
 	PlayerController = Cast<AISPlayerController>(GetController());
 	UMeshComponent* PlayerMesh = FindComponentByClass<UMeshComponent>();
 	PlayerMaterialInstance = UMaterialInstanceDynamic::Create(PlayerMesh->GetMaterial(0), this);
+	PlayerMesh->SetMaterial(0, PlayerMaterialInstance);
+	PlayerMesh->SetMaterial(1, PlayerMaterialInstance);
 
 	///Set up capsule component height
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
@@ -469,7 +516,35 @@ void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AAct
 	{
 		if (OtherActor->ActorHasTag(FName("Inside")))
 		{
+			TArray<AActor*> OverlappedActors;
+			GetOverlappingActors(OverlappedActors);
+			//TODO Finish fixing the overlapping actors to stop the camera from trying to switch back to third person
+			/*for (AActor* Actors : OverlappedActors)
+			{
+
+			}
+			*/
 			EnvironmentSwitchCamera(false);
 		}
 	}
+}
+
+void AISPlayerCharacter::LerpPlayerOpacityInvisible(float A, float B, float Alpha)
+{
+	float OpacityValue = FMath::Lerp(B, A, Alpha);
+	if (PlayerMaterialInstance)
+	{
+		PlayerMaterialInstance->SetScalarParameterValue(FName("Opacity"), OpacityValue);
+	}
+	return;
+}
+
+void AISPlayerCharacter::LerpPlayerOpacityVisible(float A, float B, float Alpha)
+{
+	float OpacityValue = FMath::Lerp(A, B, Alpha);
+	if (PlayerMaterialInstance)
+	{
+		PlayerMaterialInstance->SetScalarParameterValue(FName("Opacity"), OpacityValue);
+	}
+	return;
 }

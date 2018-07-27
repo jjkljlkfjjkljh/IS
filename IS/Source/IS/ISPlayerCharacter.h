@@ -76,7 +76,9 @@ private:
 	UFUNCTION()
 	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	//UCharacterMovementComponent* MovementComponent = nullptr;
+	void LerpPlayerOpacityInvisible(float A, float B, float Alpha);
+
+	void LerpPlayerOpacityVisible(float A, float B, float Alpha);
 
 	AActor* Player;
 
@@ -94,6 +96,8 @@ private:
 	UMaterialInstanceDynamic* PlayerMaterialInstance = nullptr;
 
 	bool bSprinting = false;
+	bool bIsLerpingToVisible = false;
+	bool bIsLerpingToInvisible = false;
 
 	float GlobalDeltaTime = 0.f;
 	float SprintAlpha = 0.f;
@@ -112,6 +116,10 @@ private:
 
 	float HeadHeight = 70.f;
 	float ForwardHeadOffset = 10.f;
+
+	float LerpAlpha = 0.f;
+	float PlayerOpacity = 1.f;
+	float LerpModifier = 2.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float BaseTurnRate = 45.f;
