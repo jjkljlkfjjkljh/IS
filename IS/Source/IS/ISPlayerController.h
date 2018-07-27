@@ -65,6 +65,9 @@ public:
 	void FovChanged(float PercentageFov);
 
 	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void PlayerControlledCameraChanged(bool bPlayerControlledCamera);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ResetSettingsToDefaults();
 
 	FLoadedData LoadedData;

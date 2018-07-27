@@ -76,8 +76,6 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	if (bIsLerpingToInvisible)
 	{
 		LerpAlpha -= (DeltaTime * LerpModifier);
-		UE_LOG(LogTemp, Warning, TEXT("To Invisible"));
-		UE_LOG(LogTemp, Warning, TEXT("Player Opacity is: %f"), PlayerOpacity);
 		LerpPlayerOpacityInvisible(PlayerOpacity, 0.f, LerpAlpha);
 		if (LerpAlpha <= 0)
 		{
@@ -90,8 +88,6 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	if (bIsLerpingToVisible)
 	{
 		LerpAlpha += (DeltaTime * LerpModifier);
-		UE_LOG(LogTemp, Warning, TEXT("To Visible"));
-		UE_LOG(LogTemp, Warning, TEXT("Player Opacity is: %f"), PlayerOpacity);
 		LerpPlayerOpacityVisible(PlayerOpacity, 1.f, LerpAlpha);
 		if (LerpAlpha >= 1)
 		{
@@ -201,11 +197,11 @@ void AISPlayerCharacter::PlayerSwitchCamera()
 }
 
 //If set to true the camera will be first person
-void AISPlayerCharacter::EnvironmentSwitchCamera(bool bSetFirstPerson)
+void AISPlayerCharacter::EnvironmentSwitchCamera()
 {
 	if (!PlayerController->LoadedData.bSettingsPlayerControlledCamera)
 	{
-		if (DynamicCamera->bIsFirstPerson)
+		if (DynamicCamera->bIsFirstPerson && (InsideCount <= 0))
 		{
 			DynamicCamera->bIsFirstPerson = false;
 			FirstPersonLookUpOffset = 0.f;
@@ -499,36 +495,6 @@ ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()
 	return Camera;
 }
 
-void AISPlayerCharacter::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
-{
-	if (OtherActor && (OtherActor != this) && OtherComp)
-	{
-		if (OtherActor->ActorHasTag(FName("Inside")))
-		{
-			EnvironmentSwitchCamera(true);
-		}
-	}
-}
-
-void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor && (OtherActor != this) && OtherComp)
-	{
-		if (OtherActor->ActorHasTag(FName("Inside")))
-		{
-			TArray<AActor*> OverlappedActors;
-			GetOverlappingActors(OverlappedActors);
-			//TODO Finish fixing the overlapping actors to stop the camera from trying to switch back to third person
-			/*for (AActor* Actors : OverlappedActors)
-			{
-
-			}
-			*/
-			EnvironmentSwitchCamera(false);
-		}
-	}
-}
-
 void AISPlayerCharacter::LerpPlayerOpacityInvisible(float A, float B, float Alpha)
 {
 	float OpacityValue = FMath::Lerp(B, A, Alpha);
@@ -547,4 +513,39 @@ void AISPlayerCharacter::LerpPlayerOpacityVisible(float A, float B, float Alpha)
 		PlayerMaterialInstance->SetScalarParameterValue(FName("Opacity"), OpacityValue);
 	}
 	return;
+}
+
+void AISPlayerCharacter::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	if (OtherActor && (OtherActor != this) && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName("Inside")))
+		{
+			InsideCount++;
+			EnvironmentSwitchCamera();
+		}
+	}
+}
+
+void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor && (OtherActor != this) && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName("Inside")))
+		{
+			InsideCount--;
+			if (InsideCount <= 0)
+			{
+				EnvironmentSwitchCamera();
+			}
+			//TArray<AActor*> OverlappedActors;
+			//GetOverlappingActors(OverlappedActors);
+			//TODO Finish fixing the overlapping actors to stop the camera from trying to switch back to third person
+			/*for (AActor* Actors : OverlappedActors)
+			{
+
+			}
+			*/
+		}
+	}
 }

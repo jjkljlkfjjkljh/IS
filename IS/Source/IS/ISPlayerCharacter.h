@@ -36,7 +36,7 @@ public:
 
 	//Input functions
 	void PlayerSwitchCamera();
-	void EnvironmentSwitchCamera(bool bIsFirstPerson);
+	void EnvironmentSwitchCamera();
 	void Interact();
 	void StartSprint();
 	void StopSprint();
@@ -58,12 +58,12 @@ public:
 	void SetupComponents();
 
 	ADynamicCamera* DynamicCamera = nullptr;
-
 	AISPlayerController* PlayerController = nullptr;
 
 	bool bIsGamePaused = false;
-
 	bool bIsPlayerCrouched = false;
+
+	int32 InsideCount = 0;
 
 private:
 

@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ISPlayerController.h"
+#include "ISPlayerCharacter.h"
 #include "ISSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 #include "DynamicCamera.h"
@@ -116,6 +117,61 @@ FLoadedData AISPlayerController::LoadSettings()
 void AISPlayerController::FovChanged(float PercentageFov)
 {
 	PlayerCameraManager->SetFOV(ConvertAlphaToFov(PercentageFov));
+	return;
+}
+
+void AISPlayerController::PlayerControlledCameraChanged(bool bPlayerControlledCamera)
+{
+	AISPlayerCharacter* Player = Cast<AISPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	if (Player->InsideCount <= 0)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADynamicCamera::StaticClass(), FoundActors);
+		for (AActor* Camera : FoundActors)
+		{
+			ADynamicCamera* DynamicCamera = Cast<ADynamicCamera>(Camera);
+
+			if (DynamicCamera != nullptr)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Setting to false"));
+				DynamicCamera->bIsFirstPerson = false;
+				Player->EnvironmentSwitchCamera();
+				break;
+			}
+		}
+	}
+	else
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADynamicCamera::StaticClass(), FoundActors);
+		for (AActor* Camera : FoundActors)
+		{
+			ADynamicCamera* DynamicCamera = Cast<ADynamicCamera>(Camera);
+
+			if (DynamicCamera != nullptr)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Setting to true"));
+				DynamicCamera->bIsFirstPerson = true;
+				Player->EnvironmentSwitchCamera();
+				break;
+			}
+		}
+	}
+	/*
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADynamicCamera::StaticClass(), FoundActors);
+	for (AActor* Camera : FoundActors)
+	{
+		ADynamicCamera* DynamicCamera = Cast<ADynamicCamera>(Camera);
+
+		if (DynamicCamera != nullptr)
+		{
+			DynamicCamera->bIsFirstPerson =;
+			break;
+		}
+	}
+	*/
+	return;
 }
 
 void AISPlayerController::ResetSettingsToDefaults()
