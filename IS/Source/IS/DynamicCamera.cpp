@@ -151,7 +151,17 @@ void ADynamicCamera::LerpToNewTransform(bool RotationMatters, FTransform Target,
 	FTransform CurrentPosition = GetActorTransform();
 
 	FVector LerpVector = FMath::Lerp<FVector>(CurrentPosition.GetLocation(), Target.GetLocation(), Alpha);
-	FRotator LerpRotator = FMath::Lerp<FRotator>(CurrentPosition.Rotator(), Target.Rotator(), Alpha);
+	//Old lerp for rotation
+	//FRotator LerpRotator = FMath::Lerp<FRotator>(CurrentPosition.Rotator(), Target.Rotator(), Alpha);
+
+	//Find the shortest way to rotate to the target position
+	FRotator LerpRotator;
+	FQuat AQuat(CurrentPosition.Rotator());
+	FQuat BQuat(Target.Rotator());
+
+	FQuat Result = FQuat::Slerp(AQuat, BQuat, Alpha);
+	Result.Normalize();
+	LerpRotator = Result.Rotator();
 
 	SetActorLocation(LerpVector);
 	SetActorRotation(LerpRotator);
