@@ -210,6 +210,15 @@ void AISPlayerCharacter::EnvironmentSwitchCamera()
 			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
 			LerpAlpha = PlayerOpacity;
 		}
+		else if(!DynamicCamera->bIsFirstPerson && (InsideCount <= 0))
+		{
+			DynamicCamera->bIsFirstPerson = false;
+			FirstPersonLookUpOffset = 0.f;
+			bIsLerpingToVisible = true;
+			bIsLerpingToInvisible = false;
+			PlayerMaterialInstance->GetScalarParameterValue(FName("Opacity"), PlayerOpacity);
+			LerpAlpha = PlayerOpacity;
+		}
 		else
 		{
 			DynamicCamera->bIsFirstPerson = true;
@@ -369,7 +378,6 @@ void AISPlayerCharacter::LookUp(float InputAmount)
 			if (DynamicCamera->bIsFirstPerson)
 			{
 				FirstPersonLookUpOffset += -(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds());
-				//AddControllerPitchInput(InputAmount * CurrentTurnSpeed * GetWorld()->GetDeltaSeconds());
 			}
 			else
 			{
@@ -382,7 +390,6 @@ void AISPlayerCharacter::LookUp(float InputAmount)
 			if (DynamicCamera->bIsFirstPerson)
 			{
 				FirstPersonLookUpOffset += -(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds());
-				//AddControllerPitchInput(InputAmount * MaxTurnRate * GetWorld()->GetDeltaSeconds());
 			}
 			else
 			{
@@ -538,14 +545,6 @@ void AISPlayerCharacter::OnOverlapEnd(UPrimitiveComponent * OverlappedComp, AAct
 			{
 				EnvironmentSwitchCamera();
 			}
-			//TArray<AActor*> OverlappedActors;
-			//GetOverlappingActors(OverlappedActors);
-			//TODO Finish fixing the overlapping actors to stop the camera from trying to switch back to third person
-			/*for (AActor* Actors : OverlappedActors)
-			{
-
-			}
-			*/
 		}
 	}
 }
