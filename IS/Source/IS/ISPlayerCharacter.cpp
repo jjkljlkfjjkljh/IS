@@ -17,6 +17,7 @@
 #include "Math/UnrealMathVectorCommon.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Door.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "ISPlayerController.h"
 #include "Camera/CameraActor.h"
 #include "ISPlayerController.h"
@@ -72,6 +73,21 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	GlobalDeltaTime = DeltaTime;
+
+	if (GetCharacterMovement()->IsFalling() && bIsPlayerCrouched)
+	{
+		bIsPlayerCrouched = false;
+		CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		if (MeshComponent)
+		{
+			FVector MeshLocation = MeshComponent->GetComponentLocation();
+			MeshComponent->SetWorldLocation(FVector(
+				MeshLocation.X,
+				MeshLocation.Y,
+				MeshLocation.Z - (ColliderStandingHeight - ColliderCrouchingHeight)));
+		}
+	}
 
 	if (bIsLerpingToInvisible)
 	{
@@ -289,6 +305,14 @@ void AISPlayerCharacter::StartCrouch()
 		GetCharacterMovement()->MaxWalkSpeed = CrouchSpeed;
 		bIsPlayerCrouched = true;
 		CapsuleComponent->SetCapsuleHalfHeight(ColliderCrouchingHeight);
+		if (MeshComponent)
+		{
+			FVector MeshLocation = MeshComponent->GetComponentLocation();
+			MeshComponent->SetWorldLocation(FVector(
+				MeshLocation.X,
+				MeshLocation.Y,
+				MeshLocation.Z + (ColliderStandingHeight - ColliderCrouchingHeight)));
+		}
 		return;
 	}
 	else
@@ -296,6 +320,14 @@ void AISPlayerCharacter::StartCrouch()
 		bIsPlayerCrouched = false;
 		CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
 		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		if (MeshComponent)
+		{
+			FVector MeshLocation = MeshComponent->GetComponentLocation();
+			MeshComponent->SetWorldLocation(FVector(
+				MeshLocation.X,
+				MeshLocation.Y,
+				MeshLocation.Z - (ColliderStandingHeight - ColliderCrouchingHeight)));
+		}
 		return;
 	}
 }
@@ -307,6 +339,14 @@ void AISPlayerCharacter::StopCrouch()
 	bIsPlayerCrouched = false;
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	if (MeshComponent)
+	{
+		FVector MeshLocation = MeshComponent->GetComponentLocation();
+		MeshComponent->SetWorldLocation(FVector(
+			MeshLocation.X,
+			MeshLocation.Y,
+			MeshLocation.Z - (ColliderStandingHeight - ColliderCrouchingHeight)));
+	}
 	return;
 }
 
@@ -319,8 +359,11 @@ void AISPlayerCharacter::MoveForward(float InputAmount)
 	{
 		if ((CurrentRightInput <= 0.01f) && (CurrentRightInput >= -0.01f))
 		{
-			SprintAlpha = 0.f;
-			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+			if (!bIsPlayerCrouched)
+			{
+				SprintAlpha = 0.f;
+				GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+			}
 		}
 	}
 	if ((Controller != NULL) && InputAmount != 0.f)
@@ -346,8 +389,11 @@ void AISPlayerCharacter::MoveRight(float InputAmount)
 	{
 		if ((CurrentForwardInput <= 0.01f) && (CurrentForwardInput >= -0.01f))
 		{
-			SprintAlpha = 0.f;
-			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+			if (!bIsPlayerCrouched)
+			{
+				SprintAlpha = 0.f;
+				GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+			}
 		}
 	}
 	if ((Controller != NULL) && InputAmount != 0.f)
@@ -450,7 +496,7 @@ void AISPlayerCharacter::SetupComponents()
 {
 	//TODO Clean up commented out lines
 	//FirstPersonCamera->bUsePawnControlRotation = true;
-	MeshComponent = FindComponentByClass<UStaticMeshComponent>();
+	MeshComponent = FindComponentByClass<USkeletalMeshComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	FirstPersonCameraLocation = FindComponentByClass<UFirstPersonCameraLocation>();
 	ThirdPersonCameraLocation = FindComponentByClass<UThirdPersonCameraLocation>();

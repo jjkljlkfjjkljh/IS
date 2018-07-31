@@ -82,7 +82,7 @@ private:
 
 	AActor* Player;
 
-	UStaticMeshComponent* MeshComponent = nullptr;;
+	USkeletalMeshComponent* MeshComponent = nullptr;;
 
 	USceneComponent* SpringArm = nullptr;
 
@@ -152,7 +152,7 @@ private:
 	float SprintRampUpMultiplier = 0.01f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float CrouchSpeed = 150.f;
+	float CrouchSpeed = 85.f;
 
 	//force applied for jumps
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
