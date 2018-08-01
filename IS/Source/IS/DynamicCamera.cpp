@@ -90,6 +90,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	}
 
 	//Change camera to follow crouching behavior
+	/*
 	if (bIsCrouching)
 	{
 		bOriginalTargetHeightSet = true;
@@ -108,6 +109,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 			return;
 		}
 	}
+	*/
 
 	if (!bCrouchStartLocationSet)
 	{
