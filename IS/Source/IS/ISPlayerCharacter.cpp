@@ -538,6 +538,11 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	return HitResult;
 }
 
+FVector AISPlayerCharacter::JumpCollisionTraceLocation()
+{
+	return FVector(0, 0, 0);
+}
+
 ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()
 {
 	FVector Location(0.0f, 0.0f, 0.0f);

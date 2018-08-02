@@ -78,4 +78,4 @@ private:
 
 	float MinFOV = 50.f;
 	float MaxFOV = 130.f;
-};
+ };

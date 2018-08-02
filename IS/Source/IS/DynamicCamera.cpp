@@ -9,7 +9,7 @@
 
 
 ///Defines for making prints and errors easier to type
-#define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT(x));}
+#define PRINT(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, TEXT(x));}
 #define PRINT_GREEN(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT(x));}
 #define PRINT_RED(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT(x));}
 
@@ -193,7 +193,9 @@ void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVecto
 {
 	//TODO fix the camera for when the player moves the camera up or down during a jump
 
-	///Set the location of the camera to match the height of the start of the jump but the player controlled position
+
+
+	///Set the location of the camera to match the height of the start of the jump but at the player controlled position
 	FVector NewCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, JumpStartLocation.Z);
 	SetActorLocation(NewCameraLocation);
 

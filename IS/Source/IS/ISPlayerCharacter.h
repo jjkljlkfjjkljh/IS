@@ -13,6 +13,7 @@ class ADynamicCamera;
 class UPauseMenu;
 class AISPlayerController;
 class UMaterialInstanceDynamic;
+class USpringArmComponent;
 
 UCLASS()
 class IS_API AISPlayerCharacter : public ACharacter
@@ -69,6 +70,8 @@ private:
 
 	FHitResult GetFirstWorldDynamicInReach();
 
+	FVector JumpCollisionTraceLocation();
+
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -82,11 +85,11 @@ private:
 
 	AActor* Player;
 
-	USkeletalMeshComponent* MeshComponent = nullptr;;
-
-	USceneComponent* SpringArm = nullptr;
+	USkeletalMeshComponent* MeshComponent = nullptr;
 
 	UCapsuleComponent* CapsuleComponent = nullptr;
+
+	USpringArmComponent* SpringArm = nullptr;
 
 	UFirstPersonCameraLocation* FirstPersonCameraLocation = nullptr;
 	UThirdPersonCameraLocation* ThirdPersonCameraLocation = nullptr;
