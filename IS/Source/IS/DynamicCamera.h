@@ -24,7 +24,7 @@ public:
 
 	void SetFirstPersonLocation(FTransform TargetTransform, float DeltaTime);
 
-	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime);
+	void SetThirdPersonLocation(FTransform TargetTransform, FVector PlayerPosition, bool bIsFalling, float DeltaTime);
 
 	bool bIsFirstPerson = false;
 	bool bIsPlayerControlled = true;
@@ -37,7 +37,7 @@ private:
 
 	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition, bool bIsFalling);
 
-	void CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition);
+	void CameraPositionDuringJump(FTransform TargetTransform);
 
 	void CameraPositionDuringCrouch(FTransform TargetTransform, FVector PlayerPosition, float DeltaTime);
 
@@ -59,6 +59,7 @@ private:
 	float Alpha = 0.0f;
 	float MainOverrideDistance = 15.0f;
 	float CrouchOverrideDistance = 1.0f;
+	float OpacityDistance = 200.f;
 
 	float ClosestDistanceAllowed = 200.0f;
 	float MaxHeightAbovePlayer = 120.0f;

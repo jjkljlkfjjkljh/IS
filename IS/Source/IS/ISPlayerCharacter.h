@@ -58,9 +58,6 @@ public:
 	//Spawns dynamic camera
 	ADynamicCamera* SpawnAndSetCamera();
 
-	//Returns the location of the object hit between the player and the target location, or returns TargetLocation if nothing was hit
-	FVector JumpCollisionTraceLocation(FVector TargetLocation);
-
 	//Makes sure the game starts off with the correct camera settings
 	void SetupComponents();
 
@@ -71,6 +68,9 @@ public:
 	bool bIsPlayerCrouched = false;
 
 	int32 InsideCount = 0;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defaults)
+	float MaxTurnRate = 120.f;
 
 private:
 
@@ -130,9 +130,6 @@ private:
 	float BaseTurnRate = 45.f;
 
 	float BaseLookUpRate = 45.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = Defaults)
-	float MaxTurnRate = 90.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float TurnRampOverTime = 0.3f;

@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "ISPlayerController.generated.h"
 
+class AISPlayerCharacter;
+
 USTRUCT(BlueprintType)
 struct FLoadedData
 {
@@ -25,7 +27,7 @@ public:
 	bool bSettingsToggleCrouch;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LoadedData")
-	int32 SettingsAimResponseCurve;
+	float SettingsAimResponseMaxSpeedPercentage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LoadedData")
 	float SettingsFieldOfView;
@@ -50,6 +52,8 @@ public:
 
 	UUserWidget* PauseMenu;
 	UUserWidget* SettingsMenu;
+
+	AISPlayerCharacter* PlayerCharacter = nullptr;
 
 	virtual void BeginPlay() override;
 
@@ -78,4 +82,7 @@ private:
 
 	float MinFOV = 50.f;
 	float MaxFOV = 130.f;
+
+	float MaxAim = 200.f;
+	float MinAim = 90.f;
  };

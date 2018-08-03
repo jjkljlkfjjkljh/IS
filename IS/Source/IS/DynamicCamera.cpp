@@ -41,7 +41,7 @@ void ADynamicCamera::SetFirstPersonLocation(FTransform TargetTransform, float De
 }
 //Set the camera to match the third person location on the player character
 void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
-	FVector PlayerPosition, bool bIsFalling, bool bIsCrouching, float DeltaTime)
+	FVector PlayerPosition, bool bIsFalling, float DeltaTime)
 {
 	if (!bJumpStartLocationSet)
 	{
@@ -72,7 +72,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	{
 		bInAir = true;
 		bJumpStartLocationSet = true;
-		CameraPositionDuringJump(TargetTransform, PlayerPosition);
+		CameraPositionDuringJump(TargetTransform);
 		return;
 	}
 	else
@@ -80,6 +80,7 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		bJumpStartLocationSet = false;
 		if (bInAir)
 		{
+			Player->LerpPlayerOpacityInvisible(1, 0, 1);
 			bJustLanded = true;
 			bInAir = false;
 		}
@@ -91,28 +92,6 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 		LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
 		return;
 	}
-
-	//Change camera to follow crouching behavior
-	/*
-	if (bIsCrouching)
-	{
-		bOriginalTargetHeightSet = true;
-		bCrouchStartLocationSet = true;
-		CameraPositionDuringCrouch(TargetTransform, PlayerPosition, DeltaTime);
-		bFinishedCrouchTransition = false;
-		return;
-	}
-	else
-	{
-		bOriginalTargetHeightSet = false;
-		bCrouchStartLocationSet = false;
-		if (!bFinishedCrouchTransition)
-		{
-			LerpToNewTransform(false, TargetTransform, MainOverrideDistance, 1, DeltaTime);
-			return;
-		}
-	}
-	*/
 
 	if (!bCrouchStartLocationSet)
 	{
@@ -156,8 +135,6 @@ void ADynamicCamera::LerpToNewTransform(bool RotationMatters, FTransform Target,
 	FTransform CurrentPosition = GetActorTransform();
 
 	FVector LerpVector = FMath::Lerp<FVector>(CurrentPosition.GetLocation(), Target.GetLocation(), Alpha);
-	//Old lerp for rotation
-	//FRotator LerpRotator = FMath::Lerp<FRotator>(CurrentPosition.Rotator(), Target.Rotator(), Alpha);
 
 	//Find the shortest way to rotate to the target position
 	FRotator LerpRotator;
@@ -184,18 +161,25 @@ void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector Play
 	///the spring arm location to directly above the player based on the alpha value
 	float NewLocationZ = Target.GetLocation().Z + (MaxHeightAbovePlayer * DistanceFromPlayerAlpha);
 
-	SetActorLocation(FVector(Target.GetLocation().X, Target.GetLocation().Y, NewLocationZ));
+	FVector NewLocation = FVector(Target.GetLocation().X, Target.GetLocation().Y, NewLocationZ);
+
+	SetActorLocation(NewLocation);
 	SetActorRotation(Target.Rotator());
 	return;
 }
 
 //Called to handle the camera while the player is jumping or falling
-void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition) //TODO Remove second param
+void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform) //TODO Remove second param
 {
-	//TODO fix the camera for when the player moves the camera up or down during a jump
 	///Set the location of the camera to match the height of the start of the jump but at the player controlled position
 	FVector NewCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, JumpStartLocation.Z);
 	SetActorLocation(NewCameraLocation);
+
+	float NewDistanceFromPlayer = (Player->GetActorLocation() - NewCameraLocation).Size();
+	if (NewDistanceFromPlayer <= OpacityDistance)
+	{
+		Player->LerpPlayerOpacityInvisible(1, 0, (NewDistanceFromPlayer / OpacityDistance));
+	}
 
 	///get the look direction from the camera to the player and set the correct rotation
 	FVector CameraLocation = GetActorLocation();

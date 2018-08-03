@@ -145,7 +145,6 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 			ThirdPersonTransform,
 			GetActorLocation(), 
 			GetCharacterMovement()->IsFalling(), 
-			bIsPlayerCrouched,
 			DeltaTime);
 	}
 
@@ -483,7 +482,6 @@ void AISPlayerCharacter::Turn(float InputAmount)
 
 void AISPlayerCharacter::Pause()
 {
-	PRINT_GREEN("Pause");
 	switch (bIsGamePaused)
 	{
 		//unpause
@@ -542,30 +540,6 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	);
 
 	return HitResult;
-}
-
-FVector AISPlayerCharacter::JumpCollisionTraceLocation(FVector TargetLocation)
-{
-	FHitResult HitResult;
-	FVector Start = FindComponentByClass<UViewRotator>()->GetComponentLocation();
-	FCollisionQueryParams TraceParameters;//(FName(TEXT("")), false, GetOwner());
-
-	DrawDebugLine(GetWorld(), Start, TargetLocation, FColor::Green, true, -1, 0, 1.f);
-	bool HitFound = GetWorld()->LineTraceSingleByObjectType(HitResult, Start, TargetLocation,
-		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic), TraceParameters);
-	if (HitFound)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit Object is %s"), *(HitResult.ToString()));
-		return TargetLocation; //HitResult.Location;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit Object is %s"), *(HitResult.ToString()));
-		return TargetLocation;
-	}
-
-	//ActorLineTraceSingle(OutHit, Start, TargetLocation, ECollisionChannel::ECC_WorldStatic, CollisionParameters);
-	return TargetLocation;
 }
 
 ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()

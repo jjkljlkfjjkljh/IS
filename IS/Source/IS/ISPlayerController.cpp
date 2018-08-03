@@ -19,7 +19,6 @@ void AISPlayerController::BeginPlay()
 	LoadedData = LoadSettings();
 
 	FovChanged(LoadedData.SettingsFieldOfView);
-
 }
 
 void AISPlayerController::ShowPauseMenu(bool bDisplayMenu)
@@ -58,8 +57,8 @@ void AISPlayerController::SaveSettings(FLoadedData WidgetLoadedData)
 	SaveGameInstance->bPlayerControlledCamera = WidgetLoadedData.bSettingsPlayerControlledCamera;
 	SaveGameInstance->bToggleCrouch = WidgetLoadedData.bSettingsToggleCrouch;
 	SaveGameInstance->bToggleSprint = WidgetLoadedData.bSettingsToggleSprint;
-	SaveGameInstance->AimResponseCurve = WidgetLoadedData.SettingsAimResponseCurve;
-	SaveGameInstance->FieldOfView = WidgetLoadedData.SettingsFieldOfView;
+	SaveGameInstance->AimResponseMaxSpeedPercentage = WidgetLoadedData.SettingsAimResponseMaxSpeedPercentage;
+	SaveGameInstance->FieldOfView = ConvertAlphaToFov(WidgetLoadedData.SettingsFieldOfView);
 	SaveGameInstance->bFPHeadBob = WidgetLoadedData.bSettingsFPHeadBob;
 
 	//Save the game instance
@@ -70,9 +69,12 @@ void AISPlayerController::SaveSettings(FLoadedData WidgetLoadedData)
 	LoadedData.bSettingsPlayerControlledCamera = WidgetLoadedData.bSettingsPlayerControlledCamera;
 	LoadedData.bSettingsToggleCrouch = WidgetLoadedData.bSettingsToggleCrouch;
 	LoadedData.bSettingsToggleSprint = WidgetLoadedData.bSettingsToggleSprint;
-	LoadedData.SettingsAimResponseCurve = WidgetLoadedData.SettingsAimResponseCurve;
-	LoadedData.SettingsFieldOfView = WidgetLoadedData.SettingsFieldOfView;
+	LoadedData.SettingsAimResponseMaxSpeedPercentage = WidgetLoadedData.SettingsAimResponseMaxSpeedPercentage;
+	LoadedData.SettingsFieldOfView = ConvertAlphaToFov(WidgetLoadedData.SettingsFieldOfView);
 	LoadedData.bSettingsFPHeadBob = WidgetLoadedData.bSettingsFPHeadBob;
+
+	PlayerCharacter = Cast<AISPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	PlayerCharacter->MaxTurnRate = ((LoadedData.SettingsAimResponseMaxSpeedPercentage * (MaxAim - MinAim)) + MinAim);
 
 	UE_LOG(LogTemp, Log, TEXT("Data saved successfully"));
 	return;
@@ -92,7 +94,7 @@ FLoadedData AISPlayerController::LoadSettings()
 		TempLoadedData.bSettingsPlayerControlledCamera = false;
 		TempLoadedData.bSettingsToggleCrouch = true;
 		TempLoadedData.bSettingsToggleSprint = false;
-		TempLoadedData.SettingsAimResponseCurve = 0;
+		TempLoadedData.SettingsAimResponseMaxSpeedPercentage = 0.5f;
 		TempLoadedData.SettingsFieldOfView = 90.f;
 		TempLoadedData.bSettingsFPHeadBob = true;
 
@@ -105,8 +107,8 @@ FLoadedData AISPlayerController::LoadSettings()
 	TempLoadedData.bSettingsPlayerControlledCamera = SaveGameInstance->bPlayerControlledCamera;
 	TempLoadedData.bSettingsToggleCrouch = SaveGameInstance->bToggleCrouch;
 	TempLoadedData.bSettingsToggleSprint = SaveGameInstance->bToggleSprint;
-	TempLoadedData.SettingsAimResponseCurve = SaveGameInstance->AimResponseCurve;
-	TempLoadedData.SettingsFieldOfView = SaveGameInstance->FieldOfView;
+	TempLoadedData.SettingsAimResponseMaxSpeedPercentage = SaveGameInstance->AimResponseMaxSpeedPercentage;
+	TempLoadedData.SettingsFieldOfView = ConvertFovToAlpha(SaveGameInstance->FieldOfView);
 	TempLoadedData.bSettingsFPHeadBob = SaveGameInstance->bFPHeadBob;
 
 	LoadedData = TempLoadedData;
@@ -173,19 +175,25 @@ void AISPlayerController::ResetSettingsToDefaults()
 		SaveGameInstance->bPlayerControlledCamera = false;
 		SaveGameInstance->bToggleCrouch = true;
 		SaveGameInstance->bToggleSprint = true;
-		SaveGameInstance->AimResponseCurve = 0;
+		SaveGameInstance->AimResponseMaxSpeedPercentage = 0.5f;
 		SaveGameInstance->FieldOfView = 90.f;
 		SaveGameInstance->bFPHeadBob = true;
+
+		UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("MainSaveSlot"), 0);
 
 		TempLoadedData.bSettingsAimAccelerationEnabled = SaveGameInstance->bAimAccelerationEnabled;
 		TempLoadedData.bSettingsPlayerControlledCamera = SaveGameInstance->bPlayerControlledCamera;
 		TempLoadedData.bSettingsToggleCrouch = SaveGameInstance->bToggleCrouch;
 		TempLoadedData.bSettingsToggleSprint = SaveGameInstance->bToggleSprint;
-		TempLoadedData.SettingsAimResponseCurve = SaveGameInstance->AimResponseCurve;
+		TempLoadedData.SettingsAimResponseMaxSpeedPercentage = SaveGameInstance->AimResponseMaxSpeedPercentage;
 		TempLoadedData.SettingsFieldOfView = SaveGameInstance->FieldOfView;
 		TempLoadedData.bSettingsFPHeadBob = SaveGameInstance->bFPHeadBob;
 
 		LoadedData = TempLoadedData;
+
+		PlayerCharacter = Cast<AISPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		PlayerCharacter->MaxTurnRate = ((LoadedData.SettingsAimResponseMaxSpeedPercentage * (MaxAim - MinAim)) + MinAim);
+
 		UE_LOG(LogTemp, Log, TEXT("Data loaded unsuccessfully, save data has been set to defaults"));
 		return;
 	}
@@ -194,21 +202,27 @@ void AISPlayerController::ResetSettingsToDefaults()
 	SaveGameInstance->bPlayerControlledCamera = false;
 	SaveGameInstance->bToggleCrouch = true;
 	SaveGameInstance->bToggleSprint = true;
-	SaveGameInstance->AimResponseCurve = 0;
+	SaveGameInstance->AimResponseMaxSpeedPercentage = 0.5f;
 	SaveGameInstance->FieldOfView = 90.f;
 	SaveGameInstance->bFPHeadBob = true;
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("MainSaveSlot"), 0);
 
 	TempLoadedData.bSettingsAimAccelerationEnabled = SaveGameInstance->bAimAccelerationEnabled;
 	TempLoadedData.bSettingsPlayerControlledCamera = SaveGameInstance->bPlayerControlledCamera;
 	TempLoadedData.bSettingsToggleCrouch = SaveGameInstance->bToggleCrouch;
 	TempLoadedData.bSettingsToggleSprint = SaveGameInstance->bToggleSprint;
-	TempLoadedData.SettingsAimResponseCurve = SaveGameInstance->AimResponseCurve;
+	TempLoadedData.SettingsAimResponseMaxSpeedPercentage = SaveGameInstance->AimResponseMaxSpeedPercentage;
 	TempLoadedData.SettingsFieldOfView = SaveGameInstance->FieldOfView;
 	TempLoadedData.bSettingsFPHeadBob = SaveGameInstance->bFPHeadBob;
 
 
 
 	LoadedData = TempLoadedData;
+
+	PlayerCharacter = Cast<AISPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	PlayerCharacter->MaxTurnRate = ((LoadedData.SettingsAimResponseMaxSpeedPercentage * (MaxAim - MinAim)) + MinAim);
+
 	UE_LOG(LogTemp, Log, TEXT("Data reset successfully"));
 	return;
 }

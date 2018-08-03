@@ -9,6 +9,6 @@ UISSaveGame::UISSaveGame()
 	bPlayerControlledCamera = false;
 	bToggleSprint = false;
 	bToggleCrouch = false;
-	AimResponseCurve = 0;
+	AimResponseMaxSpeedPercentage = 0.5;
 	FieldOfView = 90.f;
 }

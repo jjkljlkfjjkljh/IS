@@ -30,7 +30,7 @@ public:
 	bool bToggleCrouch;
 
 	UPROPERTY(EditAnywhere)
-	int32 AimResponseCurve;
+	float AimResponseMaxSpeedPercentage;
 
 	UPROPERTY(EditAnywhere)
 	float FieldOfView;
