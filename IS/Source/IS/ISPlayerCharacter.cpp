@@ -63,6 +63,8 @@ void AISPlayerCharacter::BeginPlay()
 
 	Player = this;
 
+	SpawnTransform = GetActorTransform();
+
 	DynamicCamera = SpawnAndSetCamera();
 	SetupComponents();
 }
@@ -73,6 +75,11 @@ void AISPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	GlobalDeltaTime = DeltaTime;
+
+	if (GetActorLocation().Z < -1000)
+	{
+		SetActorTransform(SpawnTransform);
+	}
 
 	if (GetCharacterMovement()->IsFalling() && bIsPlayerCrouched)
 	{
@@ -504,7 +511,6 @@ void AISPlayerCharacter::SetupComponents()
 	UMeshComponent* PlayerMesh = FindComponentByClass<UMeshComponent>();
 	PlayerMaterialInstance = UMaterialInstanceDynamic::Create(PlayerMesh->GetMaterial(0), this);
 	PlayerMesh->SetMaterial(0, PlayerMaterialInstance);
-	PlayerMesh->SetMaterial(1, PlayerMaterialInstance);
 
 	///Set up capsule component height
 	CapsuleComponent->SetCapsuleHalfHeight(ColliderStandingHeight);
@@ -524,7 +530,7 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 
 	FVector LineTraceEnd = (PlayerViewPointLocation + (GetActorForwardVector() * Reach));
 
-	///Line trace (AKA ray-cast) out to reach distance
+	///Line trace out to reach distance
 	FHitResult HitResult;
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
 	GetWorld()->LineTraceSingleByObjectType(
@@ -538,9 +544,28 @@ FHitResult AISPlayerCharacter::GetFirstWorldDynamicInReach()
 	return HitResult;
 }
 
-FVector AISPlayerCharacter::JumpCollisionTraceLocation()
+FVector AISPlayerCharacter::JumpCollisionTraceLocation(FVector TargetLocation)
 {
-	return FVector(0, 0, 0);
+	FHitResult HitResult;
+	FVector Start = FindComponentByClass<UViewRotator>()->GetComponentLocation();
+	FCollisionQueryParams TraceParameters;//(FName(TEXT("")), false, GetOwner());
+
+	DrawDebugLine(GetWorld(), Start, TargetLocation, FColor::Green, true, -1, 0, 1.f);
+	bool HitFound = GetWorld()->LineTraceSingleByObjectType(HitResult, Start, TargetLocation,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic), TraceParameters);
+	if (HitFound)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit Object is %s"), *(HitResult.ToString()));
+		return TargetLocation; //HitResult.Location;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit Object is %s"), *(HitResult.ToString()));
+		return TargetLocation;
+	}
+
+	//ActorLineTraceSingle(OutHit, Start, TargetLocation, ECollisionChannel::ECC_WorldStatic, CollisionParameters);
+	return TargetLocation;
 }
 
 ADynamicCamera* AISPlayerCharacter::SpawnAndSetCamera()

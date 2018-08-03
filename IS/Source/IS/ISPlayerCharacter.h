@@ -48,12 +48,18 @@ public:
 	void LookUp(float InputAmount);
 	void Turn(float InputAmount);
 
+	void LerpPlayerOpacityInvisible(float A, float B, float Alpha);
+	void LerpPlayerOpacityVisible(float A, float B, float Alpha);
+
 	//Function the pause widget can call to clear the pause screen UI and set variables correctly
 	UFUNCTION(BlueprintCallable, Category = "CustomUI")
 	void Pause();
 
 	//Spawns dynamic camera
 	ADynamicCamera* SpawnAndSetCamera();
+
+	//Returns the location of the object hit between the player and the target location, or returns TargetLocation if nothing was hit
+	FVector JumpCollisionTraceLocation(FVector TargetLocation);
 
 	//Makes sure the game starts off with the correct camera settings
 	void SetupComponents();
@@ -70,18 +76,12 @@ private:
 
 	FHitResult GetFirstWorldDynamicInReach();
 
-	FVector JumpCollisionTraceLocation();
-
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// declare overlap end function
 	UFUNCTION()
 	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	void LerpPlayerOpacityInvisible(float A, float B, float Alpha);
-
-	void LerpPlayerOpacityVisible(float A, float B, float Alpha);
 
 	AActor* Player;
 
@@ -123,6 +123,8 @@ private:
 	float LerpAlpha = 0.f;
 	float PlayerOpacity = 1.f;
 	float LerpModifier = 2.5f;
+
+	FTransform SpawnTransform;
 
 	UPROPERTY(EditDefaultsOnly, Category = Defaults)
 	float BaseTurnRate = 45.f;

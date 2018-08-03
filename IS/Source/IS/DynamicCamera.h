@@ -35,7 +35,7 @@ private:
 
 	void LerpToNewTransform(bool RotationMatters, FTransform Target, float AlphaOverrideDistance, float TimeScale, float DeltaTime);
 
-	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition);
+	void RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition, bool bIsFalling);
 
 	void CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition);
 

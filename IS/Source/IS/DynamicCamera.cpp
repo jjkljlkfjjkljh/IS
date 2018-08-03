@@ -60,8 +60,11 @@ void ADynamicCamera::SetThirdPersonLocation(FTransform TargetTransform,
 	//Prevent the camera from going inside the player. If the camera is too close reposition it above the player
 	if ((PlayerPosition - TargetTransform.GetLocation()).Size() < ClosestDistanceAllowed)
 	{
-		RepositionThirdPersonCamera(TargetTransform, PlayerPosition);
-		return;
+		if (!bIsFalling)
+		{
+			RepositionThirdPersonCamera(TargetTransform, PlayerPosition, bIsFalling);
+			return;
+		}
 	}
 
 	//position the camera if the player is jumping or in the air
@@ -171,10 +174,8 @@ void ADynamicCamera::LerpToNewTransform(bool RotationMatters, FTransform Target,
 }
 
 //Find a new location above the player to position the camera
-void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition)
+void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector PlayerPosition, bool bIsFalling)
 {
-	//TODO possible change the lerp to always look a tthe player while lerping only location
-
 	///Calculate an alpha value between 0 and 1 for where the camera
 	///is in relation to the center of the player and the spring arm
 	float DistanceFromPlayerAlpha = 1 - (((PlayerPosition - Target.GetLocation()).Size()) / ClosestDistanceAllowed);
@@ -189,12 +190,9 @@ void ADynamicCamera::RepositionThirdPersonCamera(FTransform Target, FVector Play
 }
 
 //Called to handle the camera while the player is jumping or falling
-void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition)
+void ADynamicCamera::CameraPositionDuringJump(FTransform TargetTransform, FVector PlayerPosition) //TODO Remove second param
 {
 	//TODO fix the camera for when the player moves the camera up or down during a jump
-
-
-
 	///Set the location of the camera to match the height of the start of the jump but at the player controlled position
 	FVector NewCameraLocation = FVector(TargetTransform.GetLocation().X, TargetTransform.GetLocation().Y, JumpStartLocation.Z);
 	SetActorLocation(NewCameraLocation);
